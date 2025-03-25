@@ -1,8 +1,8 @@
 export default function Hero() {
   return (
     <section className="min-h-[80vh] flex items-center bg-gradient-to-br from-blue-50 to-white">
-      <div className="container mx-auto px-4">
-        <div className="max-w-3xl">
+      <div className="container mx-auto px-6 sm:px-8 md:px-4">
+        <div className="max-w-3xl mx-auto md:mx-0">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
             Open-Source Framework for the Industrial AI & Data Economy
           </h1>
