@@ -41,11 +41,11 @@ export default function Header() {
     : 'text-[8px] md:text-sm';
 
   return (
-    <header className="w-full bg-white sticky top-0 z-50 py-2 md:py-5">
+    <header className="w-full bg-white sticky top-0 z-50 py-2 md:py-4">
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between">
           {/* Logo container with smooth transition */}
-          <div className="flex items-center w-24 h-10 md:h-16 relative">
+          <div className="flex items-center w-24 h-10 md:h-14 relative">
             <Link href="/" aria-label="Go to homepage">
               <div 
                 className={`bg-gray-100 rounded-full flex items-center justify-center absolute ${
@@ -63,13 +63,13 @@ export default function Header() {
           
           {/* Desktop Navigation Links - hidden on mobile */}
           <div className="hidden md:flex flex-grow justify-center items-center">
-            <div className="flex space-x-36 pt-2">
-              <Link href="#" className="text-gray-800 hover:text-blue-600">LINK 1</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600">LINK 2</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600">LINK 3</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600">LINK 4</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600">LINK 5</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600">LINK 6</Link>
+            <div className="flex space-x-36 pt-1">
+              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 1</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 2</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 3</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 4</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 5</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 6</Link>
             </div>
           </div>
           
@@ -77,7 +77,7 @@ export default function Header() {
           <MobileNav />
           
           {/* Desktop tool icon - only visible on desktop */}
-          <div className="hidden md:block pt-2">
+          <div className="hidden md:block pt-1">
             <button
               className="p-2 text-gray-600 transition-colors hover:text-blue-600"
               aria-label="Menu"
