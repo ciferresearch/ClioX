@@ -63,7 +63,7 @@ export default function Header() {
           
           {/* Desktop Navigation Links - hidden on mobile */}
           <div className="hidden md:flex flex-grow justify-center items-center">
-            <div className="flex space-x-36 pt-1">
+            <div className="flex space-x-42 pt-1">
               <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 1</Link>
               <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 2</Link>
               <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 3</Link>
