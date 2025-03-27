@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,7 +32,7 @@ export default function MobileNav() {
 
       {(isOpen || isAnimating) && (
         <div 
-          className={`absolute top-full left-0 right-0 bg-white border-b shadow-lg transform transition-all duration-800 ease-out ${
+          className={`absolute top-full left-0 right-0 bg-white shadow-lg transform transition-all duration-300 ease-out ${
             isOpen 
               ? "opacity-100 translate-y-0 max-h-[500px]" 
               : "opacity-0 -translate-y-2 max-h-0 overflow-hidden"
@@ -39,24 +40,24 @@ export default function MobileNav() {
           onTransitionEnd={handleAnimationEnd}
         >
           <nav className="container mx-auto px-4 py-4 flex flex-col gap-4">
-            <a href="#ecosystem" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
-              Ecosystem
-            </a>
-            <a href="#portals" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
-              Portals
-            </a>
-            <a href="#features" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
-              Features
-            </a>
-            <a href="#resources" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
-              Resources
-            </a>
-            <a href="#cases" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
-              Case Studies
-            </a>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition-colors duration-200 w-full">
-              Documentation
-            </button>
+            <Link href="/link1" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
+              LINK 1
+            </Link>
+            <Link href="/link2" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
+              LINK 2
+            </Link>
+            <Link href="/link3" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
+              LINK 3
+            </Link>
+            <Link href="/link4" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
+              LINK 4
+            </Link>
+            <Link href="/link5" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
+              LINK 5
+            </Link>
+            <Link href="/link6" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
+              LINK 6
+            </Link>
           </nav>
         </div>
       )}

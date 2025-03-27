@@ -1,19 +1,15 @@
 import Hero from '@/components/sections/home/Hero';
-import Ecosystem from '@/components/sections/home/Ecosystem';
-import Portals from '@/components/sections/home/Portals';
-import Features from '@/components/sections/home/Features';
-import Resources from '@/components/sections/home/Resources';
-import CaseStudies from '@/components/sections/home/CaseStudies';
+import WhatWeDo from '@/components/sections/home/WhatWeDo';
+import Pillars from '@/components/sections/home/Pillars';
+import ContactAndOnboarding from '@/components/sections/home/Contact';
 
 export default function Home() {
   return (
-    <>
+    <main>
       <Hero />
-      <Ecosystem />
-      <Portals />
-      <Features />
-      <Resources />
-      <CaseStudies />
-    </>
+      <WhatWeDo />
+      <Pillars />
+      <ContactAndOnboarding />
+    </main>
   );
 }

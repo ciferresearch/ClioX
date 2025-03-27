@@ -1,8 +1,19 @@
+"use client";
+
 import Image from 'next/image';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear();
+  // Use state to store the year and initialize it with an empty string
+  const [currentYear, setCurrentYear] = useState('');
+  // State to track if the logo image fails to load
+  const [logoError, setLogoError] = useState(false);
+  
+  // Update the year on the client side only
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear().toString());
+  }, []);
   
   return (
     <footer className="bg-slate-900 text-white">
@@ -65,12 +76,17 @@ export default function Footer() {
       <div className="border-t border-slate-700">
         <div className="container mx-auto px-4 py-6 flex items-center">
           <div className="mr-4">
-            <Image
-              src="/logo-clio-x.svg" 
-              alt="Clio-X Logo"
-              width={120}
-              height={32}
-            />
+            {!logoError ? (
+              <Image
+                src="/logo-clio-x.svg" 
+                alt="Clio-X Logo"
+                width={120}
+                height={32}
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <div className="font-bold text-xl">Clio-X</div>
+            )}
           </div>
           <div className="text-sm text-slate-400">
             Copyright © {currentYear} Clio-X

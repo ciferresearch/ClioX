@@ -1,33 +1,92 @@
-import MobileNav from './MobileNav';
+"use client";
+
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import MobileNav from './MobileNav';
+import { Bars3Icon } from '@heroicons/react/24/outline';
 
 export default function Header() {
+  // Use a simple boolean state with a default value
+  const [atTop, setAtTop] = useState(true);
+  // Add a state to track if component is mounted
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    // Mark component as mounted
+    setIsMounted(true);
+    
+    // Set initial scroll position
+    setAtTop(window.scrollY === 0);
+    
+    // Handle scroll events
+    const handleScroll = () => {
+      const isAtTop = window.scrollY === 0;
+      if (isAtTop !== atTop) {
+        setAtTop(isAtTop);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [atTop]);
+
+  // Only render dynamic content after mounting
+  // Keep mobile logo position consistent regardless of scroll position
+  const logoSize = isMounted && atTop 
+    ? 'w-10 h-10 top-1/2 -translate-y-1/2 md:w-24 md:h-24 md:top-4 md:translate-y-0' 
+    : 'w-10 h-10 top-1/2 -translate-y-1/2 md:w-12 md:h-12';
+    
+  const textSize = isMounted && atTop 
+    ? 'text-[8px] md:text-lg' 
+    : 'text-[8px] md:text-sm';
+
   return (
-    <header className="fixed top-0 w-full bg-white/80 backdrop-blur-sm z-50 border-w">
-      <nav className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          {/* Logo with link to homepage */}
-          <Link href="/" className="font-bold text-xl hover:text-blue-600">
-            Clio-X
-          </Link>
+    <header className="w-full bg-white sticky top-0 z-50 py-2 md:py-5">
+      <div className="container mx-auto px-6">
+        <div className="flex items-center justify-between">
+          {/* Logo container with smooth transition */}
+          <div className="flex items-center w-24 h-10 md:h-16 relative">
+            <Link href="/" aria-label="Go to homepage">
+              <div 
+                className={`bg-gray-100 rounded-full flex items-center justify-center absolute ${
+                  isMounted ? 'transition-all duration-300 ease-in-out' : ''
+                } ${logoSize}`}
+              >
+                <span className={`text-gray-800 font-bold ${
+                  isMounted ? 'transition-all duration-300 ease-in-out' : ''
+                } ${textSize}`}>
+                  LOGO
+                </span>
+              </div>
+            </Link>
+          </div>
+          
+          {/* Desktop Navigation Links - hidden on mobile */}
+          <div className="hidden md:flex flex-grow justify-center items-center">
+            <div className="flex space-x-36 pt-2">
+              <Link href="#" className="text-gray-800 hover:text-blue-600">LINK 1</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600">LINK 2</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600">LINK 3</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600">LINK 4</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600">LINK 5</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600">LINK 6</Link>
+            </div>
+          </div>
+          
+          {/* Mobile Navigation - only visible on mobile */}
+          <MobileNav />
+          
+          {/* Desktop tool icon - only visible on desktop */}
+          <div className="hidden md:block pt-2">
+            <button
+              className="p-2 text-gray-600 transition-colors hover:text-blue-600"
+              aria-label="Menu"
+            >
+              <Bars3Icon className="h-6 w-6" />
+            </button>
+          </div>
         </div>
-        <div className="hidden md:flex items-center gap-6">
-          <Link href="/#ecosystem" className="hover:text-blue-600">Ecosystem</Link>
-          <Link href="/#portals" className="hover:text-blue-600">Portals</Link>
-          <Link href="/#features" className="hover:text-blue-600">Features</Link>
-          <Link href="/#resources" className="hover:text-blue-600">Resources</Link>
-          <Link href="/#cases" className="hover:text-blue-600">Case Studies</Link>
-        </div>
-        <div className="hidden md:block">
-          <Link 
-            href="/docs" 
-            className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 inline-block"
-          >
-            Documentation
-          </Link>
-        </div>
-        <MobileNav />
-      </nav>
+      </div>
     </header>
   );
 } 
