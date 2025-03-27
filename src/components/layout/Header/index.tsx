@@ -33,19 +33,19 @@ export default function Header() {
   // Only render dynamic content after mounting
   // Keep mobile logo position consistent regardless of scroll position
   const logoSize = isMounted && atTop 
-    ? 'w-10 h-10 top-1/2 -translate-y-1/2 md:w-24 md:h-24 md:top-4 md:translate-y-0' 
-    : 'w-10 h-10 top-1/2 -translate-y-1/2 md:w-12 md:h-12';
+    ? 'w-12 h-12 top-1/2 -translate-y-1/2 md:w-24 md:h-24 md:top-4 md:translate-y-0' 
+    : 'w-12 h-12 top-1/2 -translate-y-1/2 md:w-12 md:h-12';
     
   const textSize = isMounted && atTop 
-    ? 'text-[8px] md:text-lg' 
-    : 'text-[8px] md:text-sm';
+    ? 'text-[10px] md:text-lg' 
+    : 'text-[10px] md:text-sm';
 
   return (
-    <header className="w-full bg-white sticky top-0 z-50 py-2 md:py-4">
+    <header className="w-full bg-white sticky top-0 z-50 py-3 md:py-4">
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between">
           {/* Logo container with smooth transition */}
-          <div className="flex items-center w-24 h-10 md:h-14 relative">
+          <div className="flex items-center w-24 h-12 md:h-14 relative">
             <Link href="/" aria-label="Go to homepage">
               <div 
                 className={`bg-gray-100 rounded-full flex items-center justify-center absolute ${

@@ -24,9 +24,9 @@ export default function MobileNav() {
         aria-label="Toggle menu"
       >
         {isOpen ? (
-          <XMarkIcon className="h-6 w-6" />
+          <XMarkIcon className="h-8 w-8" />
         ) : (
-          <Bars3Icon className="h-6 w-6" />
+          <Bars3Icon className="h-8 w-8" />
         )}
       </button>
 
@@ -40,22 +40,22 @@ export default function MobileNav() {
           onTransitionEnd={handleAnimationEnd}
         >
           <nav className="container mx-auto px-4 py-4 flex flex-col gap-4">
-            <Link href="/link1" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
+            <Link href="/link1" className="hover:text-blue-600 transition-colors duration-200 font-bold" onClick={() => setIsOpen(false)}>
               LINK 1
             </Link>
-            <Link href="/link2" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
+            <Link href="/link2" className="hover:text-blue-600 transition-colors duration-200 font-bold" onClick={() => setIsOpen(false)}>
               LINK 2
             </Link>
-            <Link href="/link3" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
+            <Link href="/link3" className="hover:text-blue-600 transition-colors duration-200 font-bold" onClick={() => setIsOpen(false)}>
               LINK 3
             </Link>
-            <Link href="/link4" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
+            <Link href="/link4" className="hover:text-blue-600 transition-colors duration-200 font-bold" onClick={() => setIsOpen(false)}>
               LINK 4
             </Link>
-            <Link href="/link5" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
+            <Link href="/link5" className="hover:text-blue-600 transition-colors duration-200 font-bold" onClick={() => setIsOpen(false)}>
               LINK 5
             </Link>
-            <Link href="/link6" className="hover:text-blue-600 transition-colors duration-200" onClick={() => setIsOpen(false)}>
+            <Link href="/link6" className="hover:text-blue-600 transition-colors duration-200 font-bold" onClick={() => setIsOpen(false)}>
               LINK 6
             </Link>
           </nav>
