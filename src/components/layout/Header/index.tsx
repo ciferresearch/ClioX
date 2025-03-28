@@ -45,7 +45,7 @@ export default function Header() {
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between">
           {/* Logo container with smooth transition */}
-          <div className="flex items-center w-24 h-12 md:h-14 relative">
+          <div className="flex items-center w-24 h-10 md:h-14 relative">
             <Link href="/" aria-label="Go to homepage">
               <div 
                 className={`bg-gray-100 rounded-full flex items-center justify-center absolute ${
@@ -62,8 +62,10 @@ export default function Header() {
           </div>
           
           {/* Desktop Navigation Links - hidden on mobile */}
-          <div className="hidden md:flex flex-grow justify-center items-center">
-            <div className="flex space-x-42 pt-1">
+          <div className="hidden md:block">
+            <div
+              className="flex space-x-42 pt-1"
+            >
               <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 1</Link>
               <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 2</Link>
               <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 3</Link>
@@ -82,7 +84,18 @@ export default function Header() {
               className="p-2 text-gray-600 transition-colors hover:text-blue-600"
               aria-label="Menu"
             >
-              <Bars3Icon className="h-6 w-6" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                aria-hidden="true"
+                data-slot="icon"
+                className="h-8 w-8"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+              </svg>
             </button>
           </div>
         </div>
