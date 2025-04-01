@@ -35,3 +35,7 @@
 
 * run project 
 [python main.py]
+
+* architecture
+    * templates: for all html files
+    * static: for all css, js files, and data/images, sub folder is permitted
