@@ -124,7 +124,7 @@ def sentiment_classication(df):
 
 
 if __name__ == "__main__":
-    file_path = '../../data/inputs/enron/enron_subset.csv'
+    file_path = '../../data/enron/enron_subset.csv'
     df = pd.read_csv(file_path)
 
     email_data = df["message"].apply(extract)
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     df['time'] = df['date'].str[:-12].apply(lambda x: datetime.strptime(x, '%a, %d %b %Y %H:%M:%S'))
 
     # save data 
-    df.to_csv('outputs/enron_cleaned.csv', index=False)
+    df.to_csv('./static/outputs/enron_cleaned.csv', index=False)
 
 
     ## local analysis
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     plt.ylabel('Count')
     plt.title('Email Date Distribution')
     plt.xticks(rotation=45) 
-    plt.savefig('outputs/date_distribution')
+    plt.savefig('./static/outputs/date_distribution')
     plt.show()
     plt.close()
 
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     plt.xlabel("Emails Per Day")
     plt.ylabel("Frequency")
     plt.title("Distribution of Emails Per Day")
-    plt.savefig('outputs/email_per_day_distribution')
+    plt.savefig('./static/outputs/email_per_day_distribution')
     plt.show()
     plt.close()
 
@@ -205,8 +205,7 @@ if __name__ == "__main__":
     aggregate_df['mean'] = aggregate_df.drop(columns='total').mean(axis=1)
 
     # Assuming aggregate_df is your DataFrame containing the sentiment data
-    # skip first line for better visualization
-    plot_df = aggregate_df[1:]
+    plot_df = aggregate_df.copy()
     
     plot_df = plot_df.reset_index()
     plot_df["date"] = pd.to_datetime(plot_df["date"], errors="coerce")  # Coerce invalid values to NaT
