@@ -15,7 +15,7 @@
 [conda activate {name}]
 
 
-# frondend 
+# frontend 
 
 ### use npm for javascript dependencies management under Node.js runtime, but you can change to yarn if you are facing slow dependencies download problem 
 
