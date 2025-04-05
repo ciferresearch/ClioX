@@ -2,31 +2,41 @@ import Container from '@/components/layout/Container';
 
 export default function Pillars() {
   const pillars = [
-    { id: 1, title: 'Pillar 1', content: 'Description of the first pillar or ethos of Clio X.' },
-    { id: 2, title: 'Pillar 2', content: 'Description of the second pillar or ethos of Clio X.' },
-    { id: 3, title: 'Pillar 3', content: 'Description of the third pillar or ethos of Clio X.' },
+    {
+      id: 1,
+      title: 'Ethical Humanities Computing Framework',
+      content: 'We are developing a digital ecosystem designed to ensure that all participants can contribute equitably and benefit fairly from its use.'
+    },
+    {
+      id: 2,
+      title: 'Archives First Approach',
+      content: 'Our goal is to have a platform that is collectively owned, operated, and developed for the direct benefit of archives - prioritizing their sustainability and growth.'
+    },
+    {
+      id: 3,
+      title: 'Rethinking Traditional Business Models',
+      content: 'Conventional business models have monetized archival data, generating billion-dollar corporations, often without reinvesting in the archival community. We seek to shift this dynamic by centering the needs and growth of archives.'
+    },
   ];
 
   return (
     <section className="py-24 bg-white">
       <Container>
-        <div className="flex items-center gap-3 mb-12">
-          <h2 className="text-2xl font-bold">Pillars/Ethos of Clio X</h2>
+        <div className="flex flex-col items-center text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">Our Core Pillars</h2>
+          <p className="max-w-3xl mx-auto text-lg text-gray-700">
+            Building a sustainable and ethical future for digital archives
+          </p>
         </div>
         
-        <div className="max-w-4xl mx-auto mb-16">
-          <div className="h-6 bg-gray-200 rounded mb-4 w-full"></div>
-          <div className="h-6 bg-gray-200 rounded w-full"></div>
-        </div>
-        
-        <div className="grid md:grid-cols-3 gap-12 mb-12">
+        <div className="grid md:grid-cols-3 gap-12 lg:gap-16">
           {pillars.map((pillar) => (
             <div key={pillar.id} className="flex flex-col">
               {/* Image placeholder */}
-              <div className="border border-gray-300 rounded-md p-4 mb-6 aspect-[4/3] flex items-center justify-center">
-                <div className="w-full h-full bg-gray-200 rounded-md flex flex-col items-center justify-center p-4">
+              <div className="border border-gray-200 rounded-lg p-4 mb-8 aspect-[4/3] flex items-center justify-center hover:border-gray-300 transition-colors">
+                <div className="w-full h-full bg-gray-100 rounded-md flex flex-col items-center justify-center p-4">
                   <svg
-                    className="w-16 h-16 text-gray-400 mb-2"
+                    className="w-20 h-20 text-gray-400 mb-2"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                     xmlns="http://www.w3.org/2000/svg"
@@ -37,17 +47,17 @@ export default function Pillars() {
                       clipRule="evenodd"
                     ></path>
                   </svg>
-                  <span className="text-gray-500 text-sm text-center">
-                    {pillar.title} Image
-                  </span>
                 </div>
               </div>
               
-              {/* Text description */}
-              <div className="space-y-3">
-                {Array(6).fill(0).map((_, i) => (
-                  <div key={i} className="h-4 bg-gray-200 rounded w-full"></div>
-                ))}
+              {/* Text content */}
+              <div className="space-y-4">
+                <h3 className="text-2xl font-semibold text-gray-900">
+                  {pillar.title}
+                </h3>
+                <p className="text-lg text-gray-700 leading-relaxed">
+                  {pillar.content}
+                </p>
               </div>
             </div>
           ))}
