@@ -41,9 +41,9 @@ export default function Header() {
     : 'text-[10px] md:text-sm';
 
   return (
-    <header className="w-full bg-white sticky top-0 z-50 py-3 md:py-4">
-      <div className="container mx-auto px-6">
-        <div className="flex items-center justify-between">
+    <header className="w-full bg-white sticky top-0 z-50 h-20">
+      <div className="container mx-auto h-full">
+        <div className="flex items-center justify-between h-full">
           {/* Logo container with smooth transition */}
           <div className="flex items-center w-24 h-10 md:h-14 relative">
             <Link href="/" aria-label="Go to homepage">
@@ -63,7 +63,7 @@ export default function Header() {
           
           {/* Desktop Navigation Links - hidden on mobile, centered on desktop */}
           <div className="hidden md:flex flex-grow justify-center">
-            <div className="flex space-x-16 md:space-x-24 lg:space-x-30 xl:space-x-36 pt-1">
+            <div className="flex space-x-16 md:space-x-24 lg:space-x-30 xl:space-x-36">
               <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 1</Link>
               <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 2</Link>
               <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 3</Link>
