@@ -4,6 +4,7 @@ A modern, interactive tool for visualizing text analysis results. This project f
 Architecture
 This project follows a modern frontend-backend separation architecture:
 
+```
 PETS-marketplace-adv/core-components/algo
 ├── backend/                # Flask API server
 │   ├── app.py              # Main server application
@@ -17,7 +18,7 @@ PETS-marketplace-adv/core-components/algo
     │   ├── styles/         # CSS styles
     │   └── utils/          # Frontend utilities
     └── package.json        # NPM configuration
-
+```
 
 Backend (Flask API)
 The backend provides RESTful API endpoints for:
@@ -50,48 +51,49 @@ CSS3: Styling
 Fetch API: Data fetching
 
 
-Getting Started
+# Getting Started
 
-Setting Up the Backend
-Navigate to the backend directory:
+### Setting Up the Backend
+
+* Navigate to the backend directory:
 cd backend
 `cd backend`
 
-Create a virtual environment:
+* Create a virtual environment:
 ```
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-Install dependencies:
+* Install dependencies:
 `pip install -r requirements.txt`
 
-Download required NLTK data:
+* Download required NLTK data:
 `python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords')"`
 
-Download spaCy model:
+* Download spaCy model:
 `python -m spacy download en_core_web_sm`
 
-Start the Flask server:
+* Start the Flask server:
 `python app.py`
 
 The API server will be available at http://localhost:5001
 
-Setting Up the Frontend
-Navigate to the frontend directory:
+### Setting Up the Frontend
+* Navigate to the frontend directory:
 `cd frontend`
 
-Install dependencies:
+* Install dependencies:
 `npm install`
 
-Start the development server:
+* Start the development server:
 `npm start`
 
 The frontend will be available at http://localhost:3000
 
-Setting Up Voyant Server
-Download Voyant Server from https://voyant-tools.org/
-Start the server on port 8888
+### Setting Up Voyant Server
+* Download Voyant Server from https://voyant-tools.org/
+* Start the server on port 8888
 
 API Endpoints
 | Endpoint | Method	| Description|
@@ -103,7 +105,7 @@ API Endpoints
 
 
 
-Data Flow
+### Data Flow
 1. User uploads data or selects sample data
 2. Frontend sends analysis request to backend
 3. Backend performs:
@@ -115,8 +117,8 @@ Data Flow
 5. Frontend fetches visualization data
 6. Interactive visualizations render in browser
 
-Customization
-Styling
+### Customization
+#### Styling
 All styles are organized in the `frontend/src/styles` directory:
 
 * `App.css`: Main application styles
@@ -129,7 +131,7 @@ Create a new component in `frontend/src/components`
 Add corresponding styles in `frontend/src/styles`
 Integrate the component in the Dashboard
 
-Backend Extensions
+#### Backend Extensions
 To add new analysis capabilities:
 
 1. Add new utility functions in `backend/utils`
