@@ -1,0 +1,56 @@
+.sentiment-analysis {
+    width: 100%;
+  }
+  
+  .horizon-chart {
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  .words-table-container {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #eee;
+    border-radius: 5px;
+    padding: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .words-table-container h3 {
+    margin: 0 0 10px 0;
+    text-align: center;
+  }
+  
+  .words-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+  }
+  
+  .words-table th, 
+  .words-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .words-table th {
+    background-color: #f5f5f5;
+  }
+  
+  .sentiment-color-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+  
+  .vertical-line {
+    pointer-events: none;
+  }
+  
+  .date-label {
+    pointer-events: none;
+  }
