@@ -39,8 +39,12 @@ const roles: Role[] = [
 export default function ChooseRole() {
   const [selectedRole, setSelectedRole] = useState<number | null>(null);
 
+  const handleRoleClick = (index: number) => {
+    setSelectedRole(selectedRole === index ? null : index);
+  };
+
   return (
-    <section id="choose-role" className="py-24 bg-white">
+    <section id="choose-role" className="pt-24 bg-white">
       <Container>
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-4">Choose Your Role</h2>
@@ -50,47 +54,47 @@ export default function ChooseRole() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {roles.map((role, index) => (
-              <div
-                key={index}
-                className={`rounded-2xl p-8 flex flex-col items-center text-center bg-white 
-                  cursor-pointer hover:shadow-md h-[440px]
-                  ${
-                    selectedRole === index
-                      ? "shadow-md ring-2 ring-blue-600"
-                      : "shadow-sm"
-                  }
-                  transition-all duration-300`}
-                onClick={() => setSelectedRole(index)}
-              >
-                <div className="h-[120px] flex flex-col items-center">
-                  <div className="text-4xl mb-6">{role.icon}</div>
-                  <h3 className="text-2xl font-bold">{role.title}</h3>
-                </div>
-
-                <div className="h-[120px] flex items-center">
-                  <p className="text-gray-600">{role.description}</p>
-                </div>
-
+              <div key={index} className="flex flex-col">
                 <div
-                  className={`w-full mt-auto transition-all duration-300 h-[100px]
-                  ${
-                    selectedRole === index
-                      ? "opacity-100 translate-y-0"
-                      : "opacity-0 translate-y-4 invisible"
-                  }`}
+                  className={`rounded-2xl p-8 flex flex-col items-center text-center bg-white 
+                    cursor-pointer hover:shadow-md h-[320px]
+                    ${
+                      selectedRole === index
+                        ? "shadow-md ring-2 ring-blue-600"
+                        : "shadow-sm"
+                    }
+                    transition-all duration-300`}
+                  onClick={() => handleRoleClick(index)}
                 >
-                  <div className="space-y-4">
+                  <div className="h-[120px] flex flex-col items-center">
+                    <div className="text-4xl mb-6">{role.icon}</div>
+                    <h3 className="text-2xl font-bold">{role.title}</h3>
+                  </div>
+
+                  <div className="flex items-center flex-1">
+                    <p className="text-gray-600">{role.description}</p>
+                  </div>
+                </div>
+
+                <div className="h-[140px] mt-4">
+                  <div 
+                    className={`space-y-4 transition-all duration-300 ease-out
+                      ${selectedRole === index 
+                        ? 'opacity-100 scale-100' 
+                        : 'opacity-0 scale-95'
+                      }`}
+                  >
                     <Button
                       variant="primary"
                       size="lg"
-                      className="w-full bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                      className="w-full bg-blue-600 hover:bg-blue-700 cursor-pointer transform transition-all duration-200"
                     >
                       {role.primaryAction}
                     </Button>
                     <Button
                       variant="secondary"
                       size="lg"
-                      className="w-full text-blue-600 bg-transparent hover:bg-gray-50 cursor-pointer"
+                      className="w-full text-blue-600 bg-transparent hover:bg-gray-50 cursor-pointer transform transition-all duration-200"
                     >
                       {role.secondaryAction}
                     </Button>

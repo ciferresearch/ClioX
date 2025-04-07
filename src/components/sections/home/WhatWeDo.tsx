@@ -10,7 +10,7 @@ export default function WhatWeDo() {
   ];
 
   return (
-    <section id="what-we-do" className="py-24 bg-white">
+    <section id="what-we-do" className="pt-18 pb-24 bg-white">
       <Container>
         {/* Top Section */}
         <div className="flex flex-col items-center text-center mb-20">
