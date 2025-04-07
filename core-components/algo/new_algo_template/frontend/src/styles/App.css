@@ -1,0 +1,52 @@
+.App {
+    font-family: Arial, sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .App-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .App-header h1 {
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .App-header p {
+    color: #666;
+  }
+  
+  .analyze-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 50px 0;
+  }
+  
+  .analyze-button {
+    padding: 12px 24px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .analyze-button:hover {
+    background-color: #45a049;
+  }
+  
+  .analyze-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+  
+  .error-message {
+    color: #d32f2f;
+    margin-top: 10px;
+  }

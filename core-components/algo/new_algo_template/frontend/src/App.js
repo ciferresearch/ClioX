@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './styles/App.css'; 
+import './styles/App.css';
 import Dashboard from './components/Dashboard';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
@@ -9,7 +9,7 @@ function App() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // placeholder for any initial data fetching or setup
+    // Load initial data if needed
   }, []);
 
   const handleAnalyze = async () => {

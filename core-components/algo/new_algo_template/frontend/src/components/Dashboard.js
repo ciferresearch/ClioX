@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import WordCloud from './WordCloud';
 import SentimentAnalysis from './SentimentAnalysis';
-import './Dashboard.css';
+import '../styles/Dashboard.css';
 
 const Dashboard = ({ corpus }) => {
   const [sentimentData, setSentimentData] = useState([]);
