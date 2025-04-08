@@ -1383,17 +1383,17 @@ const WordCloud = () => {
     const shouldBlur = isStopwordsModalOpen || isWhitelistModalOpen;
 
     return (
-      <div className="fixed inset-0 bg-opacity-30 backdrop-blur-xs flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div
-          className={`bg-white rounded shadow-lg w-[500px] transition-all duration-200 ${
+          className={`bg-white rounded-xl shadow-lg w-full max-w-[500px] transition-all duration-200 overflow-hidden ${
             shouldBlur ? "filter blur-xs" : ""
           }`}
         >
-          <div className="border-b p-4 bg-gray-50">
-            <h3 className="text-xl font-medium">Options</h3>
+          <div className="px-8 py-3 bg-gray-50 flex justify-between items-center">
+            <h3 className="text-lg font-medium text-gray-800">Options</h3>
             <button
               onClick={handleCloseOptions}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl"
+              className="text-gray-400 hover:text-gray-600 text-xl transition-colors cursor-pointer"
             >
               ×
             </button>
@@ -1428,7 +1428,7 @@ const WordCloud = () => {
                 </select>
               </div>
               <button
-                className="ml-2 px-4 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
+                className="ml-2 px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 cursor-pointer"
                 onClick={handleOpenStopwordsModal}
               >
                 Edit List
@@ -1463,7 +1463,7 @@ const WordCloud = () => {
                 </select>
               </div>
               <button
-                className="ml-2 px-4 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
+                className="ml-2 px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 cursor-pointer"
                 onClick={handleOpenWhitelistModal}
               >
                 Edit List
@@ -1548,7 +1548,7 @@ const WordCloud = () => {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 p-4 border-t bg-gray-50">
+          <div className="flex justify-end gap-3 px-8 py-3 bg-gray-50">
             <button
               onClick={() => {
                 // Reset to defaults
@@ -1558,19 +1558,19 @@ const WordCloud = () => {
                 setColorSelection("random");
                 setApplyGlobally(true);
               }}
-              className="px-6 py-2 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+              className="px-4 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm cursor-pointer"
             >
               Reset
             </button>
             <button
               onClick={handleCloseOptions}
-              className="px-6 py-2 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+              className="px-4 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleSaveOptions}
-              className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm cursor-pointer"
             >
               Confirm
             </button>
@@ -1636,18 +1636,18 @@ const WordCloud = () => {
 
     return (
       <div
-        className="fixed inset-0 bg-opacity-20 backdrop-blur-xs flex items-center justify-center z-[60]"
+        className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
         onClick={onClose}
       >
         <div
-          className="bg-white rounded shadow-xl max-w-[400px] w-full"
+          className="bg-white rounded-xl shadow-lg max-w-[400px] w-full overflow-hidden"
           onClick={handleContentClick}
         >
-          <div className="border-b p-3 bg-gray-50 flex justify-between items-center">
-            <h3 className="text-lg font-medium">{title}</h3>
+          <div className="px-8 py-3 bg-gray-50 flex justify-between items-center">
+            <h3 className="text-lg font-medium text-gray-800">{title}</h3>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-2xl"
+              className="text-gray-400 hover:text-gray-600 text-xl transition-colors cursor-pointer"
             >
               ×
             </button>
@@ -1697,16 +1697,16 @@ const WordCloud = () => {
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 p-3 border-t">
+          <div className="flex justify-end gap-3 px-8 py-3 bg-gray-50">
             <button
               onClick={onClose}
-              className="px-4 py-1.5 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+              className="px-4 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleSaveClick}
-              className="px-4 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm cursor-pointer"
             >
               Save
             </button>
