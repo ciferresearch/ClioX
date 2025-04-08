@@ -90,11 +90,11 @@ const SentimentChartV2 = () => {
         const response = await fetch('/data/sentiment_converted.json');
         const data: SentimentData[] = await response.json();
         
-        // Sort data by sentiment value (-2, -1, 0, +1, +2)
+        // Sort data by sentiment value from -2 to +2 (ascending order)
         data.sort((a, b) => {
           const aNum = parseInt(a.name);
           const bNum = parseInt(b.name);
-          return bNum - aNum; // Descending order (from -2 to +2)
+          return aNum - bNum; // Changed to ascending order (from -2 to +2)
         });
         
         setSentimentData(data);
@@ -161,8 +161,8 @@ const SentimentChartV2 = () => {
       case '-2': return '#4fc3f7'; // Vivid blue for very negative
       case '-1': return '#9575cd'; // Purple for slightly negative
       case '0': return '#e0e0e0';  // Light gray for neutral
-      case '1': return '#ffb74d'; // Amber for slightly positive
-      case '2': return '#ff8a65'; // Coral/orange for very positive
+      case '+1': return '#ffb74d'; // Amber for slightly positive
+      case '+2': return '#ff8a65'; // Coral/orange for very positive
       default: return '#e0e0e0';
     }
   };
@@ -210,13 +210,13 @@ const SentimentChartV2 = () => {
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
       
-    // Add title with smaller font and different position
-    svg.append('text')
-      .attr('x', width / 2)
-      .attr('y', -margin.top / 2)
-      .attr('text-anchor', 'middle')
-      .attr('class', 'text-md font-medium')
-      .text('Sentiment Categories');
+    // // Add title with smaller font and different position
+    // svg.append('text')
+    //   .attr('x', width / 2)
+    //   .attr('y', -margin.top / 2)
+    //   .attr('text-anchor', 'middle')
+    //   .attr('class', 'text-md font-medium')
+    //   .text('Sentiment Categories');
       
     // Format the data
     const formattedData: FormattedSeries[] = sentimentData.map(d => ({
@@ -280,6 +280,16 @@ const SentimentChartV2 = () => {
         .attr('transform', `translate(0,${yPos})`)
         .attr('clip-path', `url(#clip-${i})`);
       
+      // Add border for this chart
+      svg.append('rect')
+        .attr('x', 0)
+        .attr('y', yPos)
+        .attr('width', width)
+        .attr('height', chartHeight)
+        .style('fill', 'none')
+        .style('stroke', '#eaeaea') // Lighter gray border
+        .style('stroke-width', 0.25); // Thinner border
+      
       // Add Y axis label (sentiment value) with enhanced visibility
       svg.append('text')
         .attr('x', -15)
@@ -287,7 +297,7 @@ const SentimentChartV2 = () => {
         .attr('text-anchor', 'end')
         .attr('dominant-baseline', 'middle')
         .attr('class', 'text-xs font-medium')
-        .style('fill', getSentimentColor(series.name))
+        .style('fill', getSentimentColor(String(series.name)))
         .text(series.name);
         
       // Add indicator label to suggest sentiment meaning
@@ -296,22 +306,22 @@ const SentimentChartV2 = () => {
           case '-2': return 'Very Negative';
           case '-1': return 'Negative';
           case '0': return 'Neutral';
-          case '1': return 'Positive';
-          case '2': return 'Very Positive';
+          case '1': 
+          case '+1': return 'Positive';
+          case '2': 
+          case '+2': return 'Very Positive';
           default: return '';
         }
       };
         
-      // Add small label next to the value if there's room (for wider screens)
-      if (width > 600) {
-        svg.append('text')
-          .attr('x', 10)
-          .attr('y', yPos + 12)
-          .attr('class', 'text-xs')
-          .style('opacity', 0.7)
-          .style('fill', getSentimentColor(series.name))
-          .text(sentimentLabel());
-      }
+      // Add the sentiment meaning label at the top of each chart
+      svg.append('text')
+        .attr('x', 10)
+        .attr('y', yPos + 15) // Position near the top of each chart
+        .attr('class', 'text-xs')
+        .style('opacity', 0.7)
+        .style('fill', getSentimentColor(String(series.name)))
+        .text(sentimentLabel());
       
       // Create gradient for this chart
       const gradientId = `gradient-${i}`;
@@ -325,33 +335,21 @@ const SentimentChartV2 = () => {
         
       gradient.append('stop')
         .attr('offset', '0%')
-        .attr('stop-color', getSentimentColor(series.name))
+        .attr('stop-color', getSentimentColor(String(series.name)))
         .attr('stop-opacity', 0.95);
         
       gradient.append('stop')
         .attr('offset', '100%')
-        .attr('stop-color', getSentimentColor(series.name))
+        .attr('stop-color', getSentimentColor(String(series.name)))
         .attr('stop-opacity', 0.6);
   
-      // Add subtle grid lines (fewer and lighter than before)
-      chartGroup.append('g')
-        .attr('class', 'grid-lines')
-        .style('stroke', '#f5f5f5')
-        .style('stroke-opacity', 0.5)
-        .style('shape-rendering', 'crispEdges')
-        .call(
-          d3.axisLeft(y)
-            .ticks(1) // Just one grid line
-            .tickSize(-width)
-            .tickFormat(() => '')
-        );
-        
       // Generate the area
       const area = d3.area<FormattedDataPoint>()
         .x(d => x(d.date))
-        .y0(chartHeight)
+        .y0(chartHeight) // Baseline
         .y1(d => y(d.value))
-        .curve(d3.curveBasis); // Smoother curve that matches the image
+        .curve(d3.curveBasis) // Smoother curve that matches the image
+        .defined(d => !isNaN(d.value)); // Skip undefined or NaN values
         
       // Add the area
       chartGroup.append('path')
@@ -359,7 +357,8 @@ const SentimentChartV2 = () => {
         .attr('class', 'area')
         .attr('d', area)
         .style('fill', `url(#${gradientId})`)
-        .style('opacity', 0.9);
+        .style('opacity', 0.9)
+        .style('stroke', 'none');
         
       // Add a thin baseline
       chartGroup.append('line')
@@ -499,7 +498,7 @@ const SentimentChartV2 = () => {
           
           tooltipContent += `
             <div class="flex items-center">
-              <span class="inline-block w-2 h-2 mr-1" style="background-color: ${getSentimentColor(series.name)};"></span>
+              <span class="inline-block w-2 h-2 mr-1" style="background-color: ${getSentimentColor(String(series.name))};"></span>
               <span style="color:#555;">Sentiment ${series.name}</span>
             </div>
             <div class="font-medium text-right">${value}</div>
@@ -530,7 +529,7 @@ const SentimentChartV2 = () => {
     container.selectAll('svg').remove();
   
     // Set dimensions
-    const margin = { top: 10, right: 40, bottom: 20, left: 50 };
+    const margin = { top: 10, right: 80, bottom: 20, left: 50 };
     const width = brushRef.current.clientWidth - margin.left - margin.right;
     const height = 60 - margin.top - margin.bottom;
   
@@ -584,64 +583,42 @@ const SentimentChartV2 = () => {
     const line = d3.line<{date: Date, value: number}>()
       .x(d => x(d.date))
       .y(d => y(d.value))
-      .curve(d3.curveBasis); // Match the curve style from the main chart
-  
-    // Color scale based on sentiment
-    const getColor = (name: string) => getSentimentColor(name);
+      .curve(d3.curveCatmullRom.alpha(0.5)); // Smoother curve
   
     // Add mini charts for each series to the brush area
     overviewData.forEach((series) => {
       if (series.values.length > 0) {
-        // Create area generator for this mini chart
+        // Create area generator for the mini chart
         const area = d3.area<{date: Date, value: number}>()
           .x(d => x(d.date))
-          .y0(height)
+          .y0(height) // Baseline at bottom
           .y1(d => y(d.value))
-          .curve(d3.curveBasis);
-          
-        // Add the area
+          .curve(d3.curveCatmullRom.alpha(0.5));
+        
+        // Add filled area with transparency
         svg.append('path')
           .datum(series.values)
           .attr('class', 'mini-area')
           .attr('d', area as any)
-          .style('fill', getColor(series.name))
-          .style('opacity', 0.3);
-          
-        // Add the line on top for better visibility
-        svg.append('path')
-          .datum(series.values)
-          .attr('class', 'mini-line')
-          .attr('d', line as any)
-          .style('stroke', getColor(series.name))
-          .style('stroke-width', 0.8)
-          .style('fill', 'none')
-          .style('opacity', 0.7);
+          .style('fill', getSentimentColor(String(series.name)))
+          .style('fill-opacity', 0.3)
+          .style('stroke', getSentimentColor(String(series.name)))
+          .style('stroke-width', 0.75)
+          .style('stroke-opacity', 0.8);
       }
     });
   
-    // Add X axis to the brush with simplified styling
+    // Add X axis to the brush
     svg.append('g')
       .attr('transform', `translate(0,${height})`)
       .call(d3.axisBottom(x)
         .ticks(5)
-        .tickSize(-2)
-        .tickFormat(d3.timeFormat('%Y') as any))
-      .call(g => g.select('.domain').attr('stroke-width', 0.5))
-      .call(g => g.selectAll('.tick line').remove())
-      .call(g => g.selectAll('.tick text').attr('font-size', '8px'));
-  
-    // Style the brush
-    svg.selectAll('.selection')
-      .attr('fill', '#bdbdbd')
-      .attr('fill-opacity', 0.2)
-      .attr('stroke', '#9e9e9e')
-      .attr('stroke-width', 0.5);
-      
-    // Style the brush handles
-    svg.selectAll('.handle')
-      .attr('fill', '#9e9e9e')
-      .attr('stroke', '#757575')
-      .attr('stroke-width', 0.5);
+        .tickSize(-height)
+        .tickFormat(d3.timeFormat('%b %Y') as any))
+      .call(g => g.select('.domain').remove())
+      .call(g => g.selectAll('.tick line')
+        .attr('stroke', '#ccc')
+        .attr('stroke-dasharray', '2,2'));
   
     // Create brush component
     const brush = d3.brushX()
@@ -651,7 +628,6 @@ const SentimentChartV2 = () => {
         if (!event.sourceEvent || !event.selection) return;
         
         // Update the brush area visually (don't redraw the main chart for performance)
-        const [x0, x1] = event.selection as [number, number];
       })
       .on('end', (event) => {
         if (!event.sourceEvent) return; // Only respond to user events
@@ -675,13 +651,25 @@ const SentimentChartV2 = () => {
       brushGroup.call(brush.move, [x(dateRange.start), x(dateRange.end)]);
     }
   
+    // Style the brush
+    svg.selectAll('.selection')
+      .attr('fill', '#69b3a2')
+      .attr('fill-opacity', 0.3)
+      .attr('stroke', '#69b3a2');
+      
+    // Style the brush handles
+    svg.selectAll('.handle')
+      .attr('fill', '#69b3a2')
+      .attr('stroke', '#69b3a2')
+      .attr('stroke-width', 0.5);
+  
     // Add reset button
     const resetButton = container
       .append('button')
       .attr('class', 'reset-button')
       .style('position', 'absolute')
       .style('top', '10px')
-      .style('right', '45px')
+      .style('right', '85px')
       .style('background-color', '#f3f4f6')
       .style('border', '1px solid #d1d5db')
       .style('border-radius', '4px')

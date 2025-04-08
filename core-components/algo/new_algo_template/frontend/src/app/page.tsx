@@ -55,7 +55,7 @@ export default function Home() {
       </main>
       
       <footer className="mt-12 text-center text-gray-500 text-sm">
-        <p>© {new Date().getFullYear()} ClioX Algorithm Team</p>
+        <p>© {new Date().getFullYear()} ClioX</p>
       </footer>
     </div>
   );

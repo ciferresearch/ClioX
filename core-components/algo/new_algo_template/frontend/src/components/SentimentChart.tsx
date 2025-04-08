@@ -588,6 +588,12 @@ const SentimentChart = () => {
       .attr('fill-opacity', 0.3)
       .attr('stroke', '#69b3a2');
   
+    // Style the brush handles
+    svg.selectAll('.handle')
+      .attr('fill', '#69b3a2')
+      .attr('stroke', '#69b3a2')
+      .attr('stroke-width', 0.5);
+
     // Add reset button
     const resetButton = container
       .append('button')
