@@ -471,7 +471,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
               </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 text-xl transition-colors"
+                className="text-gray-400 hover:text-gray-600 text-xl transition-colors cursor-pointer"
               >
                 ×
               </button>
@@ -490,7 +490,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
               <div className="absolute top-4 right-8 flex items-center gap-2 z-10">
                 <button
                   onClick={handleZoomIn}
-                  className="p-1.5 hover:bg-gray-50 rounded-md transition-colors text-gray-600 hover:text-gray-800"
+                  className="p-1.5 hover:bg-gray-50 rounded-md transition-colors text-gray-600 hover:text-gray-800 cursor-pointer"
                   title="Zoom In"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -499,7 +499,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
                 </button>
                 <button
                   onClick={handleZoomOut}
-                  className="p-1.5 hover:bg-gray-50 rounded-md transition-colors text-gray-600 hover:text-gray-800"
+                  className="p-1.5 hover:bg-gray-50 rounded-md transition-colors text-gray-600 hover:text-gray-800 cursor-pointer"
                   title="Zoom Out"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -508,7 +508,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
                 </button>
                 <button
                   onClick={handleResetZoom}
-                  className="p-1.5 hover:bg-gray-50 rounded-md transition-colors text-gray-600 hover:text-gray-800"
+                  className="p-1.5 hover:bg-gray-50 rounded-md transition-colors text-gray-600 hover:text-gray-800 cursor-pointer"
                   title="Reset Zoom"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -526,13 +526,13 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
               <div className="flex gap-3">
                 <button
                   onClick={onClose}
-                  className="px-4 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                  className="px-4 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={onClose}
-                  className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm"
+                  className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm cursor-pointer"
                 >
                   Confirm
                 </button>

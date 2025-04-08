@@ -368,12 +368,15 @@ const DataDistribution = ({
         {data.length > 0 && !loading && !error && (
           <button
             onClick={handleOpenModal}
-            className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center"
+            className="inline-flex items-center justify-center p-1.5 rounded-md text-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer relative group"
+            aria-label="Expand chart"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
             </svg>
-            Zoom
+            <span className="absolute -bottom-8 right-0 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              Expand
+            </span>
           </button>
         )}
       </div>
