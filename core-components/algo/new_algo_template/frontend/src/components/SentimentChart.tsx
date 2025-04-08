@@ -92,7 +92,15 @@ const SentimentChart = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/data/sentiment_converted.json');
+        const response = await fetch('http://localhost:5001/api/data/sentiment');
+        
+        if (response.status === 503) {
+          throw new Error('Data is being processed. Please try again in a moment.');
+        }
+        if (!response.ok) {
+          throw new Error(`Failed to load sentiment data: ${response.statusText}`);
+        }
+
         const data: SentimentData[] = await response.json();
         setSentimentData(data);
         
@@ -112,10 +120,9 @@ const SentimentChart = () => {
           const extent = d3.extent(allDates) as [Date, Date];
           setDateRange({ start: extent[0], end: extent[1] });
         }
-        
-        setLoading(false);
       } catch (error) {
         console.error('Error loading sentiment data:', error);
+      } finally {
         setLoading(false);
       }
     };

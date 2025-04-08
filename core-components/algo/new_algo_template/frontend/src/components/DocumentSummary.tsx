@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-interface DocumentStats {
+interface DocumentSummary {
   totalDocuments: number;
   totalWords: number;
   uniqueWords: number;
@@ -14,43 +14,30 @@ interface DocumentStats {
 }
 
 const DocumentSummary = () => {
-  const [stats, setStats] = useState<DocumentStats | null>(null);
+  const [summary, setSummary] = useState<DocumentSummary | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate fetching summary data from an API
     const fetchSummary = async () => {
       setIsLoading(true);
+      setError(null);
       try {
-        // Replace with actual API call to your backend
-        // Example: const response = await fetch('/api/document-stats');
-        // const data = await response.json();
+        const response = await fetch('http://localhost:5001/api/document/summary');
         
-        // Sample statistics for demonstration
-        const sampleStats: DocumentStats = {
-          totalDocuments: 1,
-          totalWords: 55785,
-          uniqueWords: 5741,
-          vocabularyDensity: 0.103,
-          readabilityIndex: 18.678,
-          wordsPerSentence: 55785.0,
-          frequentWords: [
-            { word: 'ect', count: 1387 },
-            { word: 'enron', count: 716 },
-            { word: 'subject', count: 436 },
-            { word: 'forwarded', count: 419 },
-            { word: 'cc', count: 419 }
-          ],
-          created: new Date().toLocaleString()
-        };
-        
-        // Simulate network delay
-        setTimeout(() => {
-          setStats(sampleStats);
-          setIsLoading(false);
-        }, 800);
+        if (response.status === 503) {
+          throw new Error('Data is being processed. Please try again in a moment.');
+        }
+        if (!response.ok) {
+          throw new Error(`Failed to load summary: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setSummary(data);
       } catch (error) {
-        console.error('Error fetching document statistics:', error);
+        console.error('Error fetching document summary:', error);
+        setError(error instanceof Error ? error.message : 'Unknown error');
+      } finally {
         setIsLoading(false);
       }
     };
@@ -64,37 +51,39 @@ const DocumentSummary = () => {
       <div className="w-full bg-gray-50 rounded p-6 overflow-auto">
         {isLoading ? (
           <div className="w-full h-full flex items-center justify-center py-8">
-            <p className="text-gray-500">Loading document statistics...</p>
+            <p className="text-gray-500">Loading document summary...</p>
           </div>
-        ) : stats ? (
+        ) : error ? (
+          <p className="text-red-500">{error}</p>
+        ) : summary ? (
           <div className="prose max-w-none">
             <p className="text-gray-700 leading-relaxed mb-6">
-              This corpus has {stats.totalDocuments} document with {stats.totalWords.toLocaleString()} total words 
-              and {stats.uniqueWords.toLocaleString()} unique word forms. Created {stats.created}.
+              This corpus has {summary.totalDocuments.toLocaleString()} document{summary.totalDocuments !== 1 ? 's' : ''} with {summary.totalWords.toLocaleString()} total words 
+              and {summary.uniqueWords.toLocaleString()} unique word forms. Created {summary.created}.
             </p>
             
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-medium mb-1">Vocabulary Density:</h3>
-                <p className="text-xl font-bold text-indigo-600">{stats.vocabularyDensity.toFixed(3)}</p>
+                <p className="text-xl font-bold text-indigo-600">{summary.vocabularyDensity.toFixed(3)}</p>
               </div>
               
               <div>
                 <h3 className="text-lg font-medium mb-1">Readability Index:</h3>
-                <p className="text-xl font-bold text-blue-600">{stats.readabilityIndex.toFixed(3)}</p>
+                <p className="text-xl font-bold text-blue-600">{summary.readabilityIndex.toFixed(3)}</p>
               </div>
               
               <div>
                 <h3 className="text-lg font-medium mb-1">Average Words Per Sentence:</h3>
-                <p className="text-xl font-bold text-green-600">{stats.wordsPerSentence.toFixed(1)}</p>
+                <p className="text-xl font-bold text-green-600">{summary.wordsPerSentence.toFixed(1)}</p>
               </div>
               
               <div>
                 <h3 className="text-lg font-medium mb-2">Most frequent words in the corpus:</h3>
                 <ul className="list-disc list-inside space-y-1 pl-4">
-                  {stats.frequentWords.map((item, index) => (
+                  {summary.frequentWords.map((item, index) => (
                     <li key={index} className="text-gray-700">
-                      <span className="font-medium text-yellow-600">{item.word}</span> ({item.count})
+                      <span className="font-medium text-yellow-600">{item.word}</span> ({item.count.toLocaleString()})
                     </li>
                   ))}
                 </ul>
@@ -102,7 +91,7 @@ const DocumentSummary = () => {
             </div>
           </div>
         ) : (
-          <p className="text-red-500">No document statistics available.</p>
+          <p className="text-red-500">No document summary available.</p>
         )}
       </div>
     </div>

@@ -167,6 +167,54 @@ def get_wordcloud_data():
             'message': str(e)
         }), 500
 
+@app.route('/api/document/summary', methods=['GET'])
+def get_document_summary():
+    """Get document summary"""
+    if not data_processed:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data not yet processed'
+        }), 503
+
+    try:
+        # Read the cleaned data
+        df = pd.read_csv('outputs/enron_cleaned.csv')
+        
+        # Calculate statistics
+        total_documents = len(df)
+        total_words = df['clean_text'].str.split().str.len().sum()
+        all_words = ' '.join(df['clean_text'].dropna()).split()
+        unique_words = len(set(all_words))
+        vocabulary_density = unique_words / total_words if total_words > 0 else 0
+        
+        # Calculate readability (simple implementation)
+        total_sentences = df['clean_text'].str.count('[.!?]+').sum()
+        words_per_sentence = total_words / total_sentences if total_sentences > 0 else 0
+        avg_word_length = sum(len(word) for word in all_words) / len(all_words) if all_words else 0
+        readability_index = 0.4 * (words_per_sentence + 100 * (len([w for w in all_words if len(w) > 6]) / total_words))
+        
+        # Get frequent words
+        word_counts = Counter(all_words).most_common(5)
+        frequent_words = [{"word": word, "count": count} for word, count in word_counts]
+        
+        stats = {
+            "totalDocuments": total_documents,
+            "totalWords": total_words,
+            "uniqueWords": unique_words,
+            "vocabularyDensity": vocabulary_density,
+            "readabilityIndex": readability_index,
+            "wordsPerSentence": words_per_sentence,
+            "frequentWords": frequent_words,
+            "created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
 def initialize_nlp_engines():
     """Initialize NLP engine and PII detection"""
     from presidio_analyzer import AnalyzerEngine

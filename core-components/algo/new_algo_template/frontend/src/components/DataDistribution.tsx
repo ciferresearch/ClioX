@@ -38,24 +38,27 @@ const DataDistribution = ({
     const fetchData = async () => {
       try {
         setLoading(true);
-        let source = dataSource;
+        let endpoint = '';
 
-        // If no explicit source is provided, infer from title
-        if (!source) {
-          if (title.toLowerCase().includes('date')) {
-            source = '/data/date_distribution_data.csv';
-          } else if (title.toLowerCase().includes('email counts')) {
-            source = '/data/email_per_day_distribution_data.csv';
-          }
+        // Determine which API endpoint to use based on the title/type
+        if (title.toLowerCase().includes('date')) {
+          endpoint = 'http://localhost:5001/api/distribution/date';
+          setChartType('date');
+        } else if (title.toLowerCase().includes('email counts')) {
+          endpoint = 'http://localhost:5001/api/distribution/email';
+          setChartType('email');
         }
 
-        if (!source) {
+        if (!endpoint) {
           throw new Error('No data source specified');
         }
 
-        console.log('Fetching data from:', source);
+        console.log('Fetching data from:', endpoint);
 
-        const response = await fetch(source);
+        const response = await fetch(endpoint);
+        if (response.status === 503) {
+          throw new Error('Data is being processed. Please try again in a moment.');
+        }
         if (!response.ok) {
           throw new Error(`Failed to load data: ${response.statusText}`);
         }
@@ -75,7 +78,7 @@ const DataDistribution = ({
     };
 
     fetchData();
-  }, [title, dataSource]);
+  }, [title]);
 
   // Render chart when data is available
   useEffect(() => {
@@ -96,11 +99,8 @@ const DataDistribution = ({
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Create chart based on data source path
-    const sourcePath = dataSource || '';
-
-    if (sourcePath.includes('date_distribution') || data[0]?.time) {
-      setChartType('date');
+    // Create chart based on chart type
+    if (chartType === 'date') {
       // Date distribution chart - Bar chart
       const parseTime = d3.timeParse('%Y-%m-%d');
 
@@ -243,8 +243,7 @@ const DataDistribution = ({
         .text('Email Count Over Time')
         .attr('class', 'text-xs font-semibold text-gray-700');
 
-    } else if (sourcePath.includes('email_per_day') || data[0]?.emails_per_day) {
-      setChartType('email');
+    } else if (chartType === 'email') {
       // Emails per day histogram
       const getEmailValue = (d: any): number => {
         if ('emails_per_day' in d) {
@@ -349,7 +348,7 @@ const DataDistribution = ({
       console.warn('Could not determine chart type:', { data, dataSource });
       container.innerHTML = '<p class="text-red-500 text-center">Error: Could not determine chart type</p>';
     }
-  }, [data, dataSource, isModalOpen]);
+  }, [data, chartType, isModalOpen]);
 
   // Handle opening the modal
   const handleOpenModal = () => {

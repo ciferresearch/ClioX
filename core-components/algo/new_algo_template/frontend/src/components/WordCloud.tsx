@@ -385,13 +385,21 @@ const WordCloud = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("/data/temp/processed_wordcloud.json");
+        const response = await fetch('http://localhost:5001/api/wordcloud');
+        
+        if (response.status === 503) {
+          throw new Error('Data is being processed. Please try again in a moment.');
+        }
+        if (!response.ok) {
+          throw new Error(`Failed to load word cloud data: ${response.statusText}`);
+        }
+
         const data = await response.json();
         setWords(data.wordCloudData);
         setFilteredWords(data.wordCloudData);
         setIsLoading(false);
       } catch (error) {
-        console.error("Error fetching word cloud data:", error);
+        console.error('Error fetching word cloud data:', error);
         setIsLoading(false);
       }
     };
