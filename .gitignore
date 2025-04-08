@@ -104,3 +104,4 @@ static/data/*.json
 
 # Mac
 .DS_Store
+core-components/algo/new_algo_template/backend/static/data/temp/processed_wordcloud.json
