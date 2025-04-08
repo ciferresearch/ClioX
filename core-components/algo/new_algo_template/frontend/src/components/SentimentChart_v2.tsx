@@ -2,6 +2,12 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
+import ChartSkeleton from './ChartSkeleton';
+import ChartError from './ChartError';
+
+interface VisibleLines {
+  [key: string]: boolean;
+}
 
 interface SentimentData {
   name: string;
@@ -77,54 +83,61 @@ const SentimentChartV2 = () => {
   const [loading, setLoading] = useState(true);
   const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, null, undefined> | null>(null);
   const verticalLineRef = useRef<d3.Selection<SVGLineElement, unknown, null, undefined> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [visibleLines, setVisibleLines] = useState<VisibleLines>({});
 
   // Memoize parseTime function to avoid recreating it
   const parseTime = useCallback(d3.timeParse('%Y-%m-%dT%H:%M:%SZ'), []);
   const formatDate = useCallback(d3.timeFormat('%b %d, %Y'), []);
 
-  // Fetch data only once on initial load
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('http://localhost:5001/api/data/sentiment');
-        
-        if (response.status === 503) {
-          throw new Error('Data is being processed. Please try again in a moment.');
-        }
-        if (!response.ok) {
-          throw new Error(`Failed to load sentiment data: ${response.statusText}`);
-        }
+  // Add retry functionality
+  const fetchChartData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('http://localhost:5001/api/data/sentiment');
+      
+      if (response.status === 503) {
+        throw new Error('Data is being processed. Please try again in a moment.');
+      }
+      if (!response.ok) {
+        throw new Error(`Failed to load sentiment data: ${response.statusText}`);
+      }
 
-        const data: SentimentData[] = await response.json();
-        
-        // Sort data by sentiment value from -2 to +2 (ascending order)
-        data.sort((a, b) => {
-          const aNum = parseInt(a.name);
-          const bNum = parseInt(b.name);
-          return aNum - bNum; // Changed to ascending order (from -2 to +2)
-        });
-        
-        setSentimentData(data);
-        
-        // Initialize with full date range
-        const allDates = data.flatMap(d => 
-          d.values.map(v => parseTime(v[0]))
-        ).filter((d): d is Date => d !== null);
-        
-        if (allDates.length > 0) {
-          const extent = d3.extent(allDates) as [Date, Date];
+      const data = await response.json() as SentimentData[];
+      setSentimentData(data);
+      
+      // Initialize all lines as visible
+      const initialVisibility: VisibleLines = {};
+      data.forEach(line => {
+        initialVisibility[line.name] = true;
+      });
+      setVisibleLines(initialVisibility);
+      
+      // Initialize with full date range
+      const allDates = data.flatMap(d => 
+        d.values.map(v => parseTime(v[0]))
+      ).filter((d): d is Date => d !== null);
+      
+      if (allDates.length > 0) {
+        const extent = d3.extent(allDates);
+        if (extent[0] && extent[1]) {
           setDateRange({ start: extent[0], end: extent[1] });
         }
-      } catch (error) {
-        console.error('Error loading sentiment data:', error);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchData();
+    } catch (error) {
+      console.error('Error loading sentiment data:', error);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+    } finally {
+      setLoading(false);
+    }
   }, [parseTime]);
+
+  // Use the callback in useEffect
+  useEffect(() => {
+    fetchChartData();
+  }, [fetchChartData]);
 
   // Handle resize with debouncing
   useEffect(() => {
@@ -692,17 +705,26 @@ const SentimentChartV2 = () => {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4 w-full">
-      <h2 className="text-xl font-semibold mb-2 text-gray-800 border-b pb-2">Sentiment Analysis by Category</h2>
+      <h2 className="text-xl font-semibold mb-2 text-gray-800 border-b pb-2">
+        Sentiment Analysis Over Time
+      </h2>
       
       {loading ? (
-        <div className="flex items-center justify-center h-[400px]">
-          <p className="text-gray-500">Loading sentiment data...</p>
-        </div>
+        <ChartSkeleton type="line" height={400} />
+      ) : error ? (
+        <ChartError 
+          message={error} 
+          onRetry={fetchChartData}
+        />
       ) : (
         <>
-          <div ref={chartRef} className="w-full relative"></div>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            {/* ... existing controls ... */}
+          </div>
           
-          <div className="text-xs text-gray-500 mt-4 mb-1 ml-1">
+          <div ref={chartRef} className="w-full h-[400px] relative"></div>
+          
+          <div className="text-xs text-gray-500 mt-1 mb-1 ml-1">
             Drag to select date range:
           </div>
           

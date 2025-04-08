@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import ChartModal from './ChartModal';
+import ChartSkeleton from './ChartSkeleton';
+import ChartError from './ChartError';
 
 interface DataDistributionProps {
   title: string;
@@ -33,52 +35,55 @@ const DataDistribution = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [chartType, setChartType] = useState<'date' | 'email'>('date');
 
-  // Determine which data file to use based on the title
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        let endpoint = '';
+  // Fetch data with retry functionality
+  const fetchDistributionData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      let endpoint = '';
 
-        // Determine which API endpoint to use based on the title/type
-        if (title.toLowerCase().includes('date')) {
-          endpoint = 'http://localhost:5001/api/distribution/date';
-          setChartType('date');
-        } else if (title.toLowerCase().includes('email counts')) {
-          endpoint = 'http://localhost:5001/api/distribution/email';
-          setChartType('email');
-        }
-
-        if (!endpoint) {
-          throw new Error('No data source specified');
-        }
-
-        console.log('Fetching data from:', endpoint);
-
-        const response = await fetch(endpoint);
-        if (response.status === 503) {
-          throw new Error('Data is being processed. Please try again in a moment.');
-        }
-        if (!response.ok) {
-          throw new Error(`Failed to load data: ${response.statusText}`);
-        }
-
-        const csvText = await response.text();
-
-        // Parse CSV data
-        const parsedData = d3.csvParse(csvText);
-        console.log('Parsed data:', parsedData);
-        setData(parsedData as unknown as DataPoint[]);
-      } catch (err) {
-        console.error('Error loading data:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
+      // Determine which API endpoint to use based on the title/type
+      if (title.toLowerCase().includes('date')) {
+        endpoint = 'http://localhost:5001/api/distribution/date';
+        setChartType('date');
+      } else if (title.toLowerCase().includes('email counts')) {
+        endpoint = 'http://localhost:5001/api/distribution/email';
+        setChartType('email');
       }
-    };
 
-    fetchData();
+      if (!endpoint) {
+        throw new Error('No data source specified');
+      }
+
+      console.log('Fetching data from:', endpoint);
+
+      const response = await fetch(endpoint);
+      if (response.status === 503) {
+        throw new Error('Data is being processed. Please try again in a moment.');
+      }
+      if (!response.ok) {
+        throw new Error(`Failed to load data: ${response.statusText}`);
+      }
+
+      const csvText = await response.text();
+
+      // Parse CSV data
+      const parsedData = d3.csvParse(csvText);
+      console.log('Parsed data:', parsedData);
+      setData(parsedData as unknown as DataPoint[]);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
   }, [title]);
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchDistributionData();
+  }, [fetchDistributionData]);
 
   // Render chart when data is available
   useEffect(() => {
@@ -380,16 +385,22 @@ const DataDistribution = ({
         )}
       </div>
       {description && <p className="text-gray-600 mb-4">{description}</p>}
+      
       <div
         ref={chartRef}
         className="w-full h-64 bg-gray-50 rounded flex items-center justify-center cursor-pointer"
         onClick={data.length > 0 && !loading && !error ? handleOpenModal : undefined}
       >
-        {loading && <p className="text-gray-500">Loading chart data...</p>}
-        {error && <p className="text-red-500">Error: {error}</p>}
-        {!loading && !error && data.length === 0 &&
+        {loading ? (
+          <ChartSkeleton type={chartType === 'date' ? 'line' : 'bar'} height={256} />
+        ) : error ? (
+          <ChartError 
+            message={error} 
+            onRetry={fetchDistributionData}
+          />
+        ) : data.length === 0 ? (
           <p className="text-gray-500">No data available</p>
-        }
+        ) : null}
       </div>
 
       {/* Modal for zoomed view */}
