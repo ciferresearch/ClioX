@@ -2,7 +2,6 @@ import SentimentChart from '../components/SentimentChart';
 import SentimentChartV2 from '../components/SentimentChart_v2';
 import DataDistribution from '../components/DataDistribution';
 import WordCloud from '@/components/WordCloud';
-import TagCloud from '@/components/TagCloud';
 import DocumentSummary from '../components/DocumentSummary';
 
 export default function Home() {

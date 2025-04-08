@@ -29,6 +29,34 @@ interface Word {
 const TRANSITION_DURATION = 750;
 const DEBOUNCE_DELAY = 300;
 
+// Available options for the settings panel
+const STOPWORDS_OPTIONS = ['Auto-detect', 'None', 'English', 'Custom'];
+const WHITELIST_OPTIONS = ['None', 'Custom'];
+const FONT_FAMILIES = ['Palatino', 'Arial', 'Helvetica', 'Times New Roman', 'Courier New', 'Verdana', 'Georgia'];
+
+// English stopwords list
+const ENGLISH_STOPWORDS = [
+  'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'as', 'at', 
+  'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by', 
+  'can', 'could', 'did', 'do', 'does', 'doing', 'don', 'down', 'during', 
+  'each', 'few', 'for', 'from', 'further', 
+  'had', 'has', 'have', 'having', 'he', 'her', 'here', 'hers', 'herself', 'him', 'himself', 'his', 'how', 
+  'i', 'if', 'in', 'into', 'is', 'it', 'its', 'itself', 
+  'just', 
+  'me', 'more', 'most', 'my', 'myself', 
+  'no', 'nor', 'not', 'now', 
+  'of', 'off', 'on', 'once', 'only', 'or', 'other', 'our', 'ours', 'ourselves', 'out', 'over', 'own', 
+  's', 'same', 'she', 'should', 'so', 'some', 'such', 
+  't', 'than', 'that', 'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', 'these', 'they', 'this', 'those', 'through', 'to', 'too', 
+  'under', 'until', 'up', 
+  'very', 
+  'was', 'we', 'were', 'what', 'when', 'where', 'which', 'while', 'who', 'whom', 'why', 'will', 'with', 'would', 
+  'you', 'your', 'yours', 'yourself', 'yourselves'
+];
+
+// Custom stopwords (can be edited by user)
+const DEFAULT_CUSTOM_STOPWORDS: string[] = [];
+
 const WordCloud = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [words, setWords] = useState<WordData[]>([]);
@@ -40,12 +68,48 @@ const WordCloud = () => {
   const selectedWordRef = useRef<WordData | null>(null);
   const [minFrequency, setMinFrequency] = useState(0);
   const [maxWords, setMaxWords] = useState(100);
-  const [colorSelection, setColorSelection] = useState('random');
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
   const previousWordsRef = useRef<CloudWord[]>([]);
   const [isPanelVisible, setIsPanelVisible] = useState(false);
   const isPanelVisibleRef = useRef(false);
   const windowDimensionsRef = useRef<{width: number, height: number}>({width: 0, height: 0});
+  
+  // Modal state ref to prevent layout recalculation on modal open/close
+  const modalsOpenRef = useRef(false);
+  
+  // Flag to trigger intentional updates only when options truly change
+  const shouldUpdateLayoutRef = useRef(false);
+  
+  // Options panel state
+  const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+  const [stopwordsOption, setStopwordsOption] = useState('Auto-detect');
+  const [whitelistOption, setWhitelistOption] = useState('None');
+  const [fontFamily, setFontFamily] = useState('Palatino');
+  const [colorSelection, setColorSelection] = useState('random');
+  const [applyGlobally, setApplyGlobally] = useState(true);
+  
+  // Temp options state to track changes
+  const [tempOptions, setTempOptions] = useState({
+    stopwordsOption: 'Auto-detect',
+    whitelistOption: 'None',
+    fontFamily: 'Palatino',
+    colorSelection: 'random',
+    applyGlobally: true
+  });
+  
+  // List edit modal states
+  const [isStopwordsModalOpen, setIsStopwordsModalOpen] = useState(false);
+  const [isWhitelistModalOpen, setIsWhitelistModalOpen] = useState(false);
+  const [stopwordsEditText, setStopwordsEditText] = useState('');
+  const [whitelistEditText, setWhitelistEditText] = useState('');
+  const [originalStopwordsText, setOriginalStopwordsText] = useState('');
+  const [originalWhitelistText, setOriginalWhitelistText] = useState('');
+  
+  // Custom lists
+  const [customStopwords, setCustomStopwords] = useState<string[]>(DEFAULT_CUSTOM_STOPWORDS);
+  const [customWhitelist, setCustomWhitelist] = useState<string[]>([]);
+  const [autoDetectedStopwords, setAutoDetectedStopwords] = useState<string[]>([]);
+  
   // Store dimensions in a ref to avoid unnecessary rerenders
   const dimensionsRef = useRef({
     width: dimensions.width,
@@ -61,6 +125,89 @@ const WordCloud = () => {
 
   // Use a ref to store random color assignments for consistency
   const wordColorsRef = useRef<Record<string, string>>({});
+
+  // Helper function to get active stopwords based on current option
+  const getActiveStopwords = useCallback((): string[] => {
+    switch (stopwordsOption) {
+      case 'Auto-detect':
+        return autoDetectedStopwords;
+      case 'English':
+        return ENGLISH_STOPWORDS;
+      case 'Custom':
+        return customStopwords;
+      case 'None':
+      default:
+        return [];
+    }
+  }, [stopwordsOption, autoDetectedStopwords, customStopwords]);
+
+  // Helper function to get active whitelist based on current option
+  const getActiveWhitelist = useCallback((): string[] => {
+    switch (whitelistOption) {
+      case 'Custom':
+        return customWhitelist;
+      case 'None':
+      default:
+        return [];
+    }
+  }, [whitelistOption, customWhitelist]);
+
+  // Auto-detect stopwords based on word frequencies
+  useEffect(() => {
+    if (words.length > 10) {
+      // Find common words that likely are stopwords based on frequency analysis
+      const totalWords = words.reduce((sum, word) => sum + word.count, 0);
+      const averageFrequency = totalWords / words.length;
+      
+      // Words that appear much more frequently than average might be stopwords
+      const potentialStopwords = words
+        .filter(word => 
+          word.count > averageFrequency * 3 && // Much more frequent than average
+          word.value.length <= 4 && // Short words are often stopwords
+          !['name', 'year', 'data', 'info'].includes(word.value.toLowerCase()) // Exclude common meaningful short words
+        )
+        .map(word => word.value.toLowerCase());
+
+      setAutoDetectedStopwords(potentialStopwords);
+    }
+  }, [words]);
+
+  // Filter words
+  useEffect(() => {
+    // Skip filtering if modals are open
+    if (modalsOpenRef.current) return;
+    
+    let filtered = [...words];
+    
+    if (searchTerm) {
+      filtered = filtered.filter(word => 
+        word.value.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Apply stopwords filter
+    const stopwords = getActiveStopwords();
+    if (stopwords.length > 0) {
+      filtered = filtered.filter(word => 
+        !stopwords.includes(word.value.toLowerCase())
+      );
+    }
+    
+    // Apply whitelist filter
+    const whitelist = getActiveWhitelist();
+    if (whitelist.length > 0) {
+      filtered = filtered.filter(word => 
+        whitelist.includes(word.value.toLowerCase())
+      );
+    }
+    
+    filtered = filtered
+      .filter(word => word.count >= minFrequency)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, maxWords);
+    
+    setFilteredWords(filtered);
+  }, [words, searchTerm, minFrequency, maxWords, getActiveStopwords, getActiveWhitelist]);
 
   const getWordColor = useCallback((d: CloudWord) => {
     // For random colors, ensure consistency by storing in ref
@@ -80,15 +227,13 @@ const WordCloud = () => {
       case 'monochrome':
         return `rgba(0, 0, 255, ${0.3 + ratio * 0.7})`;
       case 'category':
-        if (ratio > 0.8) return '#d00000';
-        if (ratio > 0.6) return '#03045e';
-        if (ratio > 0.4) return '#0077b6';
-        if (ratio > 0.2) return '#00b4d8';
-        return '#90e0ef';
+        // Use the selected color palette for categorical coloring
+        const colorIndex = Math.floor(ratio * customColors.length);
+        return customColors[Math.min(colorIndex, customColors.length - 1)];
       default:
         return wordColorsRef.current[d.text] || '#333333';
     }
-  }, [colorSelection, filteredWords]); // We need filteredWords for the max count
+  }, [colorSelection, filteredWords, customColors]);
 
   // Fetch data
   useEffect(() => {
@@ -107,24 +252,6 @@ const WordCloud = () => {
 
     fetchData();
   }, []);
-
-  // Filter words
-  useEffect(() => {
-    let filtered = [...words];
-    
-    if (searchTerm) {
-      filtered = filtered.filter(word => 
-        word.value.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    filtered = filtered
-      .filter(word => word.count >= minFrequency)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, maxWords);
-    
-    setFilteredWords(filtered);
-  }, [words, searchTerm, minFrequency, maxWords]);
 
   // Create word cloud layout
   const createWordCloudLayout = useCallback((words: WordData[]): Promise<CloudWord[]> => {
@@ -145,21 +272,21 @@ const WordCloud = () => {
         })))
         .padding(3)
         .rotate((d: Word) => {
-          // only use 90-degree multiples for rotation (0, 90, 270)
-          // long words (more than 5 characters) always display horizontally (0 degrees)
+          // Only use 90-degree multiples for rotation (0, 90, 270)
+          // Long words (more than 5 characters) always display horizontally (0 degrees)
           if (d.text.length > 5) return 0;
           
-          // for short words, randomly select one of the 90-degree multiples
+          // For short words, randomly select one of the 90-degree multiples
           const rotations = [0, 90, 270];
           return rotations[Math.floor(Math.random() * rotations.length)];
         })
-        .font('Inter')
+        .font(fontFamily)  // Use selected font family
         .fontSize((d: Word) => d.size);
 
       layout.on('end', resolve);
       layout.start();
     });
-  }, [dimensions]);
+  }, [dimensions, fontFamily]);
 
   // Debounced update function
   const debouncedUpdate = useCallback(
@@ -168,6 +295,9 @@ const WordCloud = () => {
 
       // Don't update if we're not visible
       if (svgRef.current.closest('div')?.offsetParent === null) return;
+      
+      // Skip updates if modals are open
+      if (modalsOpenRef.current) return;
 
       setIsUpdating(true);
       const cloudWords = await createWordCloudLayout(words);
@@ -196,7 +326,7 @@ const WordCloud = () => {
       const enterWords = wordElements.enter()
         .append('text')
         .style('opacity', 0)
-        .style('font-family', 'Inter')
+        .style('font-family', fontFamily)  // Use selected font family
         .style('cursor', 'pointer')
         .attr('text-anchor', 'middle')
         .text(d => d.text)
@@ -209,6 +339,7 @@ const WordCloud = () => {
         .duration(TRANSITION_DURATION)
         .style('opacity', 1)
         .style('font-size', d => `${d.size}px`)
+        .style('font-family', fontFamily)  // Update font family for existing words
         .attr('transform', d => `translate(${d.x},${d.y}) rotate(${d.rotate})`);
 
       // Add interaction handlers
@@ -246,15 +377,19 @@ const WordCloud = () => {
         }, 100);
       }
     }, DEBOUNCE_DELAY),
-    [createWordCloudLayout, getWordColor] // Add getWordColor as a dependency
+    [createWordCloudLayout, getWordColor, fontFamily] // Add fontFamily as a dependency
   );
 
   // Update word cloud when filtered words change
   useEffect(() => {
-    if (!isLoading && filteredWords.length > 0) {
-      debouncedUpdate(filteredWords);
+    if (!isLoading && filteredWords.length > 0 && !modalsOpenRef.current) {
+      // Only perform update if this is an intentional update or not modal-related
+      if (shouldUpdateLayoutRef.current || (!isOptionsModalOpen && !isStopwordsModalOpen && !isWhitelistModalOpen)) {
+        shouldUpdateLayoutRef.current = false;
+        debouncedUpdate(filteredWords);
+      }
     }
-  }, [filteredWords, isLoading, debouncedUpdate]);
+  }, [filteredWords, isLoading, debouncedUpdate, isOptionsModalOpen, isStopwordsModalOpen, isWhitelistModalOpen]);
 
   // Initialize client-side only variables
   useEffect(() => {
@@ -281,7 +416,7 @@ const WordCloud = () => {
       const effectiveWidth = isPanelVisibleRef.current ? containerWidth - 256 - 16 : containerWidth;
       
       const newWidth = Math.max(effectiveWidth - 32, 400);
-      const newHeight = Math.min(500, window.innerHeight * 0.6);
+      const newHeight = Math.min(550, window.innerHeight * 0.6);
 
       // Update window dimensions ref
       windowDimensionsRef.current = {
@@ -621,70 +756,497 @@ const WordCloud = () => {
     setIsPanelVisible(false);
   };
 
+  // Handle opening the options modal
+  const handleOpenOptions = () => {
+    // Store current settings to temp state
+    setTempOptions({
+      stopwordsOption,
+      whitelistOption,
+      fontFamily,
+      colorSelection,
+      applyGlobally
+    });
+    setIsOptionsModalOpen(true);
+  };
+
+  // Handle closing the options modal without saving
+  const handleCloseOptions = () => {
+    // Revert to previous settings
+    setStopwordsOption(tempOptions.stopwordsOption);
+    setWhitelistOption(tempOptions.whitelistOption);
+    setFontFamily(tempOptions.fontFamily);
+    setColorSelection(tempOptions.colorSelection);
+    setApplyGlobally(tempOptions.applyGlobally);
+    setIsOptionsModalOpen(false);
+  };
+
+  // Handle saving options
+  const handleSaveOptions = () => {
+    const optionsChanged = 
+      tempOptions.stopwordsOption !== stopwordsOption ||
+      tempOptions.whitelistOption !== whitelistOption ||
+      tempOptions.fontFamily !== fontFamily ||
+      tempOptions.colorSelection !== colorSelection ||
+      tempOptions.applyGlobally !== applyGlobally;
+    
+    // Set the flag to update only if changes were made
+    shouldUpdateLayoutRef.current = optionsChanged;
+    
+    setIsOptionsModalOpen(false);
+    
+    // Force update if options changed
+    if (optionsChanged) {
+      // Short timeout to ensure modal is closed first
+      setTimeout(() => {
+        debouncedUpdate(filteredWords);
+      }, 50);
+    }
+  };
+
+  // Handle opening the stopwords edit modal
+  const handleOpenStopwordsModal = () => {
+    // If no custom stopwords have been set yet, initialize with English stopwords
+    let currentText = '';
+    if (customStopwords.length === 0) {
+      // Show the actual English stopwords instead of just a sample
+      if (stopwordsOption === 'English') {
+        currentText = ENGLISH_STOPWORDS.join('\n');
+      } else if (stopwordsOption === 'Auto-detect') {
+        currentText = autoDetectedStopwords.join('\n');
+      } else {
+        // Default example if no specific stopwords are selected
+        currentText = ['a', 'an', 'the', 'and', 'or', 'but', 'if', 'then', 'else', 'when',
+                      'to', 'at', 'in', 'on', 'by', 'for', 'with', 'about', 'against', 'between',
+                      'into', 'through', 'during', 'before', 'after', 'above', 'below', 'from', 'up', 'down',
+                      'of', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there',
+                      'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such',
+                      'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very',
+                      'can', 'will', 'just', 'should', 'now'].join('\n');
+      }
+    } else {
+      currentText = customStopwords.join('\n');
+    }
+    setStopwordsEditText(currentText);
+    setOriginalStopwordsText(currentText);
+    setIsStopwordsModalOpen(true);
+  };
+
+  // Handle saving stopwords
+  const handleSaveStopwords = () => {
+    // Only process if changes were made
+    const changesWereMade = stopwordsEditText !== originalStopwordsText;
+    
+    // Set the flag to update only if changes were made
+    shouldUpdateLayoutRef.current = changesWereMade;
+    
+    if (changesWereMade) {
+      const newStopwords = stopwordsEditText
+        .split('\n')
+        .map(word => word.trim().toLowerCase())
+        .filter(word => word.length > 0);
+      
+      setCustomStopwords(newStopwords);
+      setStopwordsOption('Custom'); // Switch to custom mode
+      
+      // Force update after modal closes
+      setTimeout(() => {
+        debouncedUpdate(filteredWords);
+      }, 50);
+    }
+    
+    setIsStopwordsModalOpen(false);
+  };
+
+  // Handle closing stopwords modal without saving
+  const handleCloseStopwordsModal = () => {
+    setIsStopwordsModalOpen(false);
+  };
+
+  // Handle opening the whitelist edit modal
+  const handleOpenWhitelistModal = () => {
+    // Show some example entries if whitelist is empty
+    let currentText = '';
+    if (customWhitelist.length === 0) {
+      // Example whitelist terms
+      currentText = ['important', 'keyword', 'significant', 'relevant'].join('\n');
+    } else {
+      currentText = customWhitelist.join('\n');
+    }
+    setWhitelistEditText(currentText);
+    setOriginalWhitelistText(currentText);
+    setIsWhitelistModalOpen(true);
+  };
+
+  // Handle saving whitelist
+  const handleSaveWhitelist = () => {
+    // Only process if changes were made
+    const changesWereMade = whitelistEditText !== originalWhitelistText;
+    
+    // Set the flag to update only if changes were made
+    shouldUpdateLayoutRef.current = changesWereMade;
+    
+    if (changesWereMade) {
+      const newWhitelist = whitelistEditText
+        .split('\n')
+        .map(word => word.trim().toLowerCase())
+        .filter(word => word.length > 0);
+      
+      setCustomWhitelist(newWhitelist);
+      setWhitelistOption('Custom'); // Switch to custom mode
+      
+      // Force update after modal closes
+      setTimeout(() => {
+        debouncedUpdate(filteredWords);
+      }, 50);
+    }
+    
+    setIsWhitelistModalOpen(false);
+  };
+  
+  // Handle closing whitelist modal without saving
+  const handleCloseWhitelistModal = () => {
+    setIsWhitelistModalOpen(false);
+  };
+
+  // Prevent page scrolling when modals are open
+  useEffect(() => {
+    const anyModalOpen = isOptionsModalOpen || isStopwordsModalOpen || isWhitelistModalOpen;
+    
+    // Update the ref for modal state
+    modalsOpenRef.current = anyModalOpen;
+    
+    if (anyModalOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [isOptionsModalOpen, isStopwordsModalOpen, isWhitelistModalOpen]);
+
+  // Options Modal Component
+  const OptionsModal = () => {
+    if (!isOptionsModalOpen) return null;
+    
+    // Determine if the modal should be blurred (when stoplist/whitelist modal is open)
+    const shouldBlur = isStopwordsModalOpen || isWhitelistModalOpen;
+    
+    return (
+      <div className="fixed inset-0 bg-opacity-30 backdrop-blur-xs flex items-center justify-center z-50">
+        <div className={`bg-white rounded shadow-lg w-[500px] transition-all duration-200 ${shouldBlur ? 'filter blur-xs' : ''}`}>
+          <div className="border-b p-4 bg-gray-50">
+            <h3 className="text-xl font-medium">Options</h3>
+            <button 
+              onClick={handleCloseOptions}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl"
+            >
+              ×
+            </button>
+          </div>
+          
+          <div className="p-6 space-y-4">
+            {/* Stopwords */}
+            <div className="flex items-center">
+              <label className="text-gray-700 w-36 text-right pr-4">Stopwords:</label>
+              <div className="flex-1">
+                <select
+                  value={stopwordsOption}
+                  onChange={(e) => setStopwordsOption(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                >
+                  {STOPWORDS_OPTIONS.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+              <button 
+                className="ml-2 px-4 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
+                onClick={handleOpenStopwordsModal}
+              >
+                Edit List
+              </button>
+            </div>
+            
+            {/* White List */}
+            <div className="flex items-center">
+              <label className="text-gray-700 w-36 text-right pr-4">White List:</label>
+              <div className="flex-1">
+                <select
+                  value={whitelistOption}
+                  onChange={(e) => setWhitelistOption(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                >
+                  {WHITELIST_OPTIONS.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+              <button 
+                className="ml-2 px-4 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
+                onClick={handleOpenWhitelistModal}
+              >
+                Edit List
+              </button>
+            </div>
+            
+            {/* Font Family */}
+            <div className="flex items-center">
+              <label className="text-gray-700 w-36 text-right pr-4">Font family:</label>
+              <div className="flex-1">
+                <select
+                  value={fontFamily}
+                  onChange={(e) => setFontFamily(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                >
+                  {FONT_FAMILIES.map(font => (
+                    <option key={font} value={font}>{font}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            {/* Color Scheme */}
+            <div className="flex items-center">
+              <label className="text-gray-700 w-36 text-right pr-4">Color scheme:</label>
+              <div className="flex-1">
+                <select
+                  value={colorSelection}
+                  onChange={(e) => setColorSelection(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                >
+                  <option value="random">Colorful (Random)</option>
+                  <option value="monochrome">Monochrome (Blue)</option>
+                  <option value="category">Categorical (by frequency)</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Apply Globally */}
+            <div className="flex items-center justify-end mt-6 mb-2 pr-2">
+              <input
+                type="checkbox"
+                id="applyGlobally"
+                checked={applyGlobally}
+                onChange={(e) => setApplyGlobally(e.target.checked)}
+                className="mr-2 h-4 w-4"
+              />
+              <label htmlFor="applyGlobally" className="text-gray-700">
+                apply globally
+              </label>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 p-4 border-t bg-gray-50">
+            <button 
+              onClick={() => {
+                // Reset to defaults
+                setStopwordsOption('Auto-detect');
+                setWhitelistOption('None');
+                setFontFamily('Palatino');
+                setColorSelection('random');
+                setApplyGlobally(true);
+              }}
+              className="px-6 py-2 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Reset
+            </button>
+            <button 
+              onClick={handleCloseOptions}
+              className="px-6 py-2 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleSaveOptions}
+              className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Edit List Modal Component
+  const ListEditModal = ({ 
+    isOpen, 
+    onClose, 
+    title, 
+    value, 
+    onChange, 
+    onSave 
+  }: { 
+    isOpen: boolean; 
+    onClose: () => void; 
+    title: string; 
+    value: string; 
+    onChange: (value: string) => void; 
+    onSave: () => void; 
+  }) => {
+    if (!isOpen) return null;
+    
+    const isStoplist = title.includes("Stopwords") || title.includes("Stoplist");
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    
+    // Prevent event propagation to parent elements
+    const handleContentClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+    };
+    
+    // Handle save - explicitly get value from the textarea
+    const handleSaveClick = () => {
+      if (textareaRef.current) {
+        onChange(textareaRef.current.value);
+      }
+      onSave();
+    };
+    
+    // Focus textarea when modal opens and position cursor at end
+    useEffect(() => {
+      if (isOpen && textareaRef.current) {
+        // Set focus
+        textareaRef.current.focus();
+        
+        // Position cursor at the end
+        const length = textareaRef.current.value.length;
+        textareaRef.current.setSelectionRange(length, length);
+      }
+    }, [isOpen]);
+    
+    // Count words from value (not from local state)
+    const wordCount = value.split('\n').filter(line => line.trim().length > 0).length;
+    
+    return (
+      <div 
+        className="fixed inset-0 bg-opacity-20 backdrop-blur-xs flex items-center justify-center z-[60]"
+        onClick={onClose}
+      >
+        <div 
+          className="bg-white rounded shadow-xl max-w-[400px] w-full"
+          onClick={handleContentClick}
+        >
+          <div className="border-b p-3 bg-gray-50 flex justify-between items-center">
+            <h3 className="text-lg font-medium">{title}</h3>
+            <button 
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 text-2xl"
+            >
+              ×
+            </button>
+          </div>
+          
+          <div className="p-4">
+            {isStoplist && (
+              <div className="flex items-center mb-2">
+                <div className="mr-2 flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-gray-600 text-sm">This is the stoplist, one term per line.</p>
+              </div>
+            )}
+            {!isStoplist && (
+              <p className="text-xs text-gray-600 mb-2">
+                Enter one word per line. All entries will be converted to lowercase.
+              </p>
+            )}
+            <div className="relative">
+              <textarea 
+                ref={textareaRef}
+                defaultValue={value}
+                placeholder="Enter one word per line"
+                className="w-full h-48 border border-gray-300 rounded p-2 font-mono text-sm resize-none"
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                {wordCount} words
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end space-x-3 p-3 border-t">
+            <button 
+              onClick={onClose}
+              className="px-4 py-1.5 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleSaveClick}
+              className="px-4 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-4 w-full overflow-hidden">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Word Cloud</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold text-gray-800 pb-2">Word Cloud</h2>
+        <button 
+          onClick={handleOpenOptions}
+          className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-300 hover:bg-gray-50 shadow-sm"
+        >
+          Options
+        </button>
+      </div>
       
       {/* Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-        <div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="flex flex-col">
           <label className="block text-sm font-medium text-gray-700 mb-1">Search terms</label>
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Filter words..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md h-10"
           />
         </div>
         
-        <div>
+        <div className="flex flex-col">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Minimum frequency: {minFrequency}
           </label>
-          <input
-            type="range"
-            min={minCount}
-            max={maxCount}
-            value={minFrequency}
-            onChange={(e) => setMinFrequency(Number(e.target.value))}
-            className="w-full"
-          />
+          <div className="flex items-center h-10">
+            <input
+              type="range"
+              min={minCount}
+              max={maxCount}
+              value={minFrequency}
+              onChange={(e) => setMinFrequency(Number(e.target.value))}
+              className="w-full"
+            />
+          </div>
         </div>
         
-        <div>
+        <div className="flex flex-col">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Max words: {maxWords}
           </label>
-          <input
-            type="range"
-            min={10}
-            max={300}
-            value={maxWords}
-            onChange={(e) => setMaxWords(Number(e.target.value))}
-            className="w-full"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Color scheme
-          </label>
-          <select
-            value={colorSelection}
-            onChange={(e) => setColorSelection(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-          >
-            <option value="random">Colorful (Random)</option>
-            <option value="monochrome">Monochrome (Blue)</option>
-            <option value="category">Categorical (by frequency)</option>
-          </select>
+          <div className="flex items-center h-10">
+            <input
+              type="range"
+              min={10}
+              max={300}
+              value={maxWords}
+              onChange={(e) => setMaxWords(Number(e.target.value))}
+              className="w-full"
+            />
+          </div>
         </div>
       </div>
       
       <div className="flex flex-col md:flex-row gap-4">
         {/* Word cloud visualization with minimum width */}
-        <div className="flex-1 h-[500px] bg-gray-50 rounded flex items-center justify-center p-4 overflow-hidden relative wordcloud-container"
+        <div className="flex-1 h-[550px] bg-gray-50 rounded flex items-center justify-center p-4 overflow-hidden relative wordcloud-container"
              style={{ minWidth: selectedWord ? '400px' : 'auto' }}>
           {(isLoading || isUpdating) && (
             <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
@@ -771,6 +1333,29 @@ const WordCloud = () => {
           <span> Frequency range: {Math.min(...filteredWords.map(w => w.count))} to {Math.max(...filteredWords.map(w => w.count))}</span>
         )}
       </div>
+      
+      {/* Options Modal */}
+      <OptionsModal />
+      
+      {/* Stopwords Edit Modal */}
+      <ListEditModal 
+        isOpen={isStopwordsModalOpen}
+        onClose={handleCloseStopwordsModal}
+        title="Edit Stoplist"
+        value={stopwordsEditText}
+        onChange={setStopwordsEditText}
+        onSave={handleSaveStopwords}
+      />
+      
+      {/* Whitelist Edit Modal */}
+      <ListEditModal 
+        isOpen={isWhitelistModalOpen}
+        onClose={handleCloseWhitelistModal}
+        title="Edit Whitelist"
+        value={whitelistEditText}
+        onChange={setWhitelistEditText}
+        onSave={handleSaveWhitelist}
+      />
     </div>
   );
 };
