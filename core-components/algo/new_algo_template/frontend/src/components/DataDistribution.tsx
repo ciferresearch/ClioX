@@ -43,9 +43,9 @@ const DataDistribution = ({
         // If no explicit source is provided, infer from title
         if (!source) {
           if (title.toLowerCase().includes('date')) {
-            source = '/data/date_distribution_data.csv';
+            source = 'http://localhost:5001/api/distribution/date';
           } else if (title.toLowerCase().includes('email counts')) {
-            source = '/data/email_per_day_distribution_data.csv';
+            source = 'http://localhost:5001/api/distribution/email';
           }
         }
 
