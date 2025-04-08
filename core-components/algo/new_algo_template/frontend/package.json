@@ -1,40 +1,41 @@
 {
-    "name": "text-visualization-frontend",
-    "version": "0.1.0",
-    "private": true,
-    "dependencies": {
-      "@testing-library/jest-dom": "^5.16.5",
-      "@testing-library/react": "^14.0.0",
-      "@testing-library/user-event": "^14.4.3",
-      "d3": "^7.8.5",
-      "react": "^18.2.0",
-      "react-dom": "^18.2.0",
-      "react-router-dom": "^6.14.1",
-      "react-scripts": "5.0.1",
-      "web-vitals": "^3.3.2"
-    },
-    "scripts": {
-      "start": "react-scripts start",
-      "build": "react-scripts build",
-      "test": "react-scripts test",
-      "eject": "react-scripts eject"
-    },
-    "eslintConfig": {
-      "extends": [
-        "react-app",
-        "react-app/jest"
-      ]
-    },
-    "browserslist": {
-      "production": [
-        ">0.2%",
-        "not dead",
-        "not op_mini all"
-      ],
-      "development": [
-        "last 1 chrome version",
-        "last 1 firefox version",
-        "last 1 safari version"
-      ]
-    }
+  "name": "results-visulization-hub",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@visx/group": "^3.12.0",
+    "@visx/responsive": "^3.12.0",
+    "@visx/scale": "^3.12.0",
+    "@visx/text": "^3.12.0",
+    "@visx/wordcloud": "^3.12.0",
+    "d3": "^7.9.0",
+    "d3-cloud": "^1.2.7",
+    "d3-scale-chromatic": "^3.1.0",
+    "next": "15.2.4",
+    "react": "^19.0.0",
+    "react-d3-cloud": "^1.0.6",
+    "react-dom": "^19.0.0",
+    "react-tagcloud": "^2.3.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/typography": "^0.5.10",
+    "@types/d3": "^7.4.3",
+    "@types/d3-cloud": "^1.2.9",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/react-tagcloud": "^2.3.2",
+    "eslint": "^9",
+    "eslint-config-next": "15.2.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
+}
