@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import * as d3 from "d3";
 import cloud from "d3-cloud";
 import debounce from "lodash/debounce";
+import ChartError from "./ChartError";
 
 interface WordData {
   value: string;
@@ -184,6 +185,7 @@ const WordCloud = () => {
   const [filteredWords, setFilteredWords] = useState<WordData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedWord, setSelectedWord] = useState<WordData | null>(null);
   const selectedWordRef = useRef<WordData | null>(null);
@@ -381,31 +383,36 @@ const WordCloud = () => {
     [colorSelection, filteredWords, customColors]
   );
 
-  // Fetch data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('http://localhost:5001/api/wordcloud');
-        
-        if (response.status === 503) {
-          throw new Error('Data is being processed. Please try again in a moment.');
-        }
-        if (!response.ok) {
-          throw new Error(`Failed to load word cloud data: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        setWords(data.wordCloudData);
-        setFilteredWords(data.wordCloudData);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching word cloud data:', error);
-        setIsLoading(false);
+  // Define fetchData as a component method for reuse
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await fetch('http://localhost:5001/api/wordcloud');
+      
+      if (response.status === 503) {
+        throw new Error('Data is being processed. Please try again in a moment.');
       }
-    };
+      if (!response.ok) {
+        throw new Error(`Failed to load word cloud data: ${response.statusText}`);
+      }
 
-    fetchData();
+      const data = await response.json();
+      setWords(data.wordCloudData);
+      setFilteredWords(data.wordCloudData);
+    } catch (error) {
+      console.error('Error fetching word cloud data:', error);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  // Fetch data only once on initial load
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Create word cloud layout
   const createWordCloudLayout = useCallback(
@@ -1811,28 +1818,42 @@ const WordCloud = () => {
           className="flex-1 h-[550px] bg-gray-50 rounded flex items-center justify-center p-4 overflow-hidden relative wordcloud-container"
           style={{ minWidth: selectedWord ? "400px" : "auto" }}
         >
-          {(isLoading || isUpdating) && (
+          {isLoading && (
             <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
               <div className="flex items-center space-x-2">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                <span className="text-gray-500">
-                  {isLoading ? "Loading..." : "Updating..."}
-                </span>
+                <span className="text-gray-500">Loading...</span>
               </div>
             </div>
           )}
-          <svg
-            ref={svgRef}
-            width="100%"
-            height="100%"
-            style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
-              minWidth: selectedWord ? "400px" : "auto",
-              cursor: "grab",
-            }}
-            className={isUpdating ? "opacity-50" : "opacity-100"}
-          />
+          
+          {error ? (
+            <ChartError 
+              message={error} 
+              onRetry={fetchData}
+            />
+          ) : isUpdating ? (
+            <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                <span className="text-gray-500">Updating...</span>
+              </div>
+            </div>
+          ) : (
+            <svg
+              ref={svgRef}
+              width="100%"
+              height="100%"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                minWidth: selectedWord ? "400px" : "auto",
+                cursor: "grab",
+              }}
+              className={isUpdating ? "opacity-50" : "opacity-100"}
+            />
+          )}
+          
           <style jsx>{`
             .wordcloud-container svg:active {
               cursor: grabbing;

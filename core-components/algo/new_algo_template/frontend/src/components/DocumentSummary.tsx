@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import ChartError from './ChartError';
 
 interface DocumentSummary {
   totalDocuments: number;
@@ -18,32 +19,33 @@ const DocumentSummary = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchSummary = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch('http://localhost:5001/api/document/summary');
-        
-        if (response.status === 503) {
-          throw new Error('Data is being processed. Please try again in a moment.');
-        }
-        if (!response.ok) {
-          throw new Error(`Failed to load summary: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        setSummary(data);
-      } catch (error) {
-        console.error('Error fetching document summary:', error);
-        setError(error instanceof Error ? error.message : 'Unknown error');
-      } finally {
-        setIsLoading(false);
+  // Define fetchSummary as a component method for reuse with error retry
+  const fetchSummary = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('http://localhost:5001/api/document/summary');
+      
+      if (response.status === 503) {
+        throw new Error('Data is being processed. Please try again in a moment.');
       }
-    };
+      if (!response.ok) {
+        throw new Error(`Failed to load summary: ${response.statusText}`);
+      }
 
-    fetchSummary();
+      const data = await response.json();
+      setSummary(data);
+    } catch (error) {
+      console.error('Error fetching document summary:', error);
+      setError(error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchSummary();
+  }, [fetchSummary]);
   
   return (
     <div className="bg-white rounded-lg shadow-md p-4 w-full">
@@ -54,7 +56,10 @@ const DocumentSummary = () => {
             <p className="text-gray-500">Loading document summary...</p>
           </div>
         ) : error ? (
-          <p className="text-red-500">{error}</p>
+          <ChartError 
+            message={error}
+            onRetry={fetchSummary}
+          />
         ) : summary ? (
           <div className="prose max-w-none">
             <p className="text-gray-700 leading-relaxed mb-6">
