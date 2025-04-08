@@ -190,7 +190,7 @@ const DataDistribution = ({
         .attr('fill', 'url(#area-gradient-' + container.id + ')')
         .attr('d', area);
 
-      // Add a line chart with smoother curve
+      // Add line chart with smoother curve
       const line = d3.line<FormattedDatePoint>()
         .defined(d => d.time !== null)
         .x(d => x(d.time!))
@@ -205,23 +205,7 @@ const DataDistribution = ({
         .attr('stroke-width', 2.5)
         .attr('d', line);
 
-      // Add tooltip
-      const tooltip = d3.select(container)
-        .append('div')
-        .attr('class', 'tooltip')
-        .style('position', 'absolute')
-        .style('background-color', 'rgba(0, 0, 0, 0.8)')
-        .style('color', 'white')
-        .style('padding', '6px 10px')
-        .style('border-radius', '4px')
-        .style('font-size', '12px')
-        .style('pointer-events', 'none')
-        .style('opacity', 0)
-        .style('z-index', 10)
-        .style('box-shadow', '0 2px 5px rgba(0,0,0,0.2)')
-        .style('transition', 'opacity 0.2s');
-
-      // Add points with hover effects
+      // Add points without hover effects
       svg.selectAll('.dot')
         .data(formattedData)
         .enter()
@@ -232,53 +216,24 @@ const DataDistribution = ({
         .attr('r', 3) // Smaller points
         .attr('fill', '#F59E0B') // Amber color for points
         .attr('stroke', '#ffffff')
-        .attr('stroke-width', 1)
-        .attr('opacity', 0.8)
-        .on('mouseover', function(event, d) {
-          // Highlight point
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr('r', 5)
-            .attr('opacity', 1);
-
-          // Format date
-          const date = d.time!.toLocaleDateString();
-
-          // Position tooltip near point
-          const [mouseX, mouseY] = d3.pointer(event, container);
-          tooltip.html(`Date: ${date}<br>Count: ${d.count}`)
-            .style('left', (mouseX + 10) + 'px')
-            .style('top', (mouseY - 25) + 'px')
-            .style('opacity', 1);
-        })
-        .on('mouseout', function() {
-          // Restore point
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr('r', 3)
-            .attr('opacity', 0.8);
-
-          // Hide tooltip
-          tooltip.style('opacity', 0);
-        });
+        .attr('stroke-width', 1.5)
+        .attr('opacity', 0.8);
 
       // Add labels
       svg.append('text')
         .attr('text-anchor', 'middle')
         .attr('x', width / 2)
-        .attr('y', height + margin.bottom - 5)
+        .attr('y', height + margin.bottom - 10)
         .text('Date')
-        .attr('class', 'text-xs text-gray-600');
+        .attr('class', 'text-sm text-gray-600');
 
       svg.append('text')
         .attr('text-anchor', 'middle')
         .attr('transform', 'rotate(-90)')
-        .attr('y', -margin.left + 15)
+        .attr('y', -margin.left + 20)
         .attr('x', -height / 2)
         .text('Count')
-        .attr('class', 'text-xs text-gray-600');
+        .attr('class', 'text-sm text-gray-600');
 
       // Add title
       svg.append('text')
@@ -334,22 +289,6 @@ const DataDistribution = ({
       svg.append('g')
         .call(d3.axisLeft(y).ticks(5));
 
-      // Add tooltip
-      const tooltip = d3.select(container)
-        .append('div')
-        .attr('class', 'tooltip')
-        .style('position', 'absolute')
-        .style('background-color', 'rgba(0, 0, 0, 0.8)')
-        .style('color', 'white')
-        .style('padding', '6px 10px')
-        .style('border-radius', '4px')
-        .style('font-size', '12px')
-        .style('pointer-events', 'none')
-        .style('opacity', 0)
-        .style('z-index', 10)
-        .style('box-shadow', '0 2px 5px rgba(0,0,0,0.2)')
-        .style('transition', 'opacity 0.2s');
-
       // Add gradient for bars
       const barGradient = svg.append('defs')
         .append('linearGradient')
@@ -367,11 +306,12 @@ const DataDistribution = ({
         .attr('stop-color', '#4F46E5')
         .attr('stop-opacity', 0.6);
 
-      // Add bars with hover effects
+      // Add bars without hover effects for small chart
       svg.selectAll('rect')
         .data(histogram)
         .enter()
         .append('rect')
+        .attr('class', 'dot')
         .attr('x', d => x(d.x0 as number))
         .attr('width', d => Math.max(0, x(d.x1 as number) - x(d.x0 as number) - 1))
         .attr('y', d => y(d.length))
@@ -380,31 +320,7 @@ const DataDistribution = ({
         .attr('rx', 2) // Rounded corners
         .attr('opacity', 0.9)
         .attr('stroke', '#ffffff')
-        .attr('stroke-width', 0.5)
-        .on('mouseover', function(event, d) {
-          // Highlight bar
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr('opacity', 1);
-
-          // Position tooltip near bar
-          const [mouseX, mouseY] = d3.pointer(event, container);
-          tooltip.html(`Emails: ${d.x0} - ${d.x1}<br>Count: ${d.length}`)
-            .style('left', (mouseX + 10) + 'px')
-            .style('top', (mouseY - 25) + 'px')
-            .style('opacity', 1);
-        })
-        .on('mouseout', function() {
-          // Restore bar
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr('opacity', 0.9);
-
-          // Hide tooltip
-          tooltip.style('opacity', 0);
-        });
+        .attr('stroke-width', 0.5);
 
       // Add labels
       svg.append('text')
@@ -412,15 +328,15 @@ const DataDistribution = ({
         .attr('x', width / 2)
         .attr('y', height + margin.bottom - 10)
         .text('Emails per Day')
-        .attr('class', 'text-xs text-gray-600');
+        .attr('class', 'text-sm text-gray-600');
 
       svg.append('text')
         .attr('text-anchor', 'middle')
         .attr('transform', 'rotate(-90)')
-        .attr('y', -margin.left + 15)
+        .attr('y', -margin.left + 20)
         .attr('x', -height / 2)
         .text('Frequency')
-        .attr('class', 'text-xs text-gray-600');
+        .attr('class', 'text-sm text-gray-600');
 
       // Add title
       svg.append('text')
@@ -433,7 +349,7 @@ const DataDistribution = ({
       console.warn('Could not determine chart type:', { data, dataSource });
       container.innerHTML = '<p class="text-red-500 text-center">Error: Could not determine chart type</p>';
     }
-  }, [data, dataSource]);
+  }, [data, dataSource, isModalOpen]);
 
   // Handle opening the modal
   const handleOpenModal = () => {

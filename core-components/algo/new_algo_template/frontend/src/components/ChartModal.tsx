@@ -14,26 +14,72 @@ interface ChartModalProps {
 const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModalProps) => {
   const modalChartRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef<any>(null);
+  const marginRef = useRef<{ top: number; right: number; bottom: number; left: number }>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [showControls, setShowControls] = useState(true);
 
   useEffect(() => {
     if (!isOpen || !modalChartRef.current || !chartData || chartData.length === 0) return;
 
-    // Clear any existing chart
-    d3.select(modalChartRef.current).selectAll('*').remove();
-
     const container = modalChartRef.current;
-    const margin = { top: 40, right: 50, bottom: 70, left: 70 };
+    const margin = { top: 40, right: 60, bottom: 80, left: 70 };
     const width = container.clientWidth - margin.left - margin.right;
     const height = container.clientHeight - margin.top - margin.bottom;
 
-    const svg = d3.select(container)
+    // Clear any existing chart
+    d3.select(container).selectAll('*').remove();
+
+    // Create base SVG
+    const baseSvg = d3.select(container)
       .append('svg')
       .attr('width', container.clientWidth)
-      .attr('height', container.clientHeight)
+      .attr('height', container.clientHeight);
+
+    const chartGroup = baseSvg
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Set initial transform
+    const initialScale = 0.85; // Slightly zoomed out to show all labels
+    const initialX = margin.left;
+    const initialY = margin.top - 20; // Move up slightly to show bottom labels better
+
+    // Add zoom behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.5, 5])
+      .on('zoom', (event) => {
+        chartGroup.attr('transform', 
+          `translate(${margin.left + event.transform.x},${margin.top + event.transform.y}) scale(${event.transform.k})`
+        );
+        setZoomLevel(event.transform.k);
+      });
+
+    // Store zoom behavior and margins in ref for external control
+    zoomRef.current = zoom;
+    marginRef.current = margin;
+
+    // Apply zoom behavior
+    baseSvg
+      .call(zoom)
+      .on('dblclick.zoom', null)
+      .style('cursor', 'grab')
+      .on('mousedown', function() {
+        d3.select(this).style('cursor', 'grabbing');
+      })
+      .on('mouseup', function() {
+        d3.select(this).style('cursor', 'grab');
+      });
+
+    // Apply initial transform
+    baseSvg.call(
+      zoom.transform,
+      d3.zoomIdentity
+        .translate(initialX, initialY)
+        .scale(initialScale)
+    );
+
+    // Update zoom level display
+    setZoomLevel(initialScale);
 
     if (chartType === 'date') {
       // Date distribution chart
@@ -71,25 +117,26 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .nice()
         .range([height, 0]);
 
-      // Add X axis
-      svg.append('g')
+      // Add X axis with more space for labels
+      const xAxis = chartGroup.append('g')
         .attr('transform', `translate(0,${height})`)
-        .call(d3.axisBottom(x))
-        .selectAll('text')
+        .call(d3.axisBottom(x).ticks(6).tickFormat(d3.timeFormat('%b %Y') as any));
+
+      xAxis.selectAll('text')
+        .attr('transform', 'rotate(-45)')
         .style('text-anchor', 'end')
         .attr('dx', '-.8em')
-        .attr('dy', '.15em')
-        .attr('transform', 'rotate(-45)');
+        .attr('dy', '1em');
 
       // Add Y axis
-      svg.append('g')
+      chartGroup.append('g')
         .call(d3.axisLeft(y));
 
       // Sort data by date for smoother line
       formattedData.sort((a: any, b: any) => a.time.getTime() - b.time.getTime());
 
       // Add area under the line with gradient
-      const areaGradient = svg.append('defs')
+      const areaGradient = chartGroup.append('defs')
         .append('linearGradient')
         .attr('id', 'area-gradient')
         .attr('x1', '0%').attr('y1', '0%')
@@ -114,7 +161,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .curve(d3.curveCatmullRom.alpha(0.5)); // Smoother curve
 
       // Add the area
-      svg.append('path')
+      chartGroup.append('path')
         .datum(formattedData)
         .attr('fill', 'url(#area-gradient)')
         .attr('d', area);
@@ -126,7 +173,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .y(d => y(d.count))
         .curve(d3.curveCatmullRom.alpha(0.5)); // Smoother curve
 
-      svg.append('path')
+      chartGroup.append('path')
         .datum(formattedData)
         .attr('fill', 'none')
         .attr('stroke', '#4F46E5') // Indigo color for line
@@ -134,7 +181,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .attr('d', line);
 
       // Add points with hover effect
-      const dots = svg.selectAll('.dot')
+      const dots = chartGroup.selectAll('.dot')
         .data(formattedData)
         .enter()
         .append('circle')
@@ -208,14 +255,14 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         });
 
       // Add labels
-      svg.append('text')
+      chartGroup.append('text')
         .attr('text-anchor', 'middle')
         .attr('x', width / 2)
         .attr('y', height + margin.bottom - 10)
         .text('Date')
         .attr('class', 'text-sm text-gray-600');
 
-      svg.append('text')
+      chartGroup.append('text')
         .attr('text-anchor', 'middle')
         .attr('transform', 'rotate(-90)')
         .attr('y', -margin.left + 20)
@@ -258,17 +305,20 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .nice()
         .range([height, 0]);
 
-      // Add X axis
-      svg.append('g')
+      // Add X axis with more space for labels
+      chartGroup.append('g')
         .attr('transform', `translate(0,${height})`)
-        .call(d3.axisBottom(x).ticks(Math.min(maxValue + 1, 10)).tickFormat(d3.format('d')));
+        .call(d3.axisBottom(x).ticks(Math.min(maxValue + 1, 15)).tickFormat(d3.format('d')))
+        .selectAll('text')
+        .style('text-anchor', 'middle')
+        .attr('dy', '1em');
 
       // Add Y axis
-      svg.append('g')
+      chartGroup.append('g')
         .call(d3.axisLeft(y).ticks(5));
 
       // Add gradient for bars
-      const barGradient = svg.append('defs')
+      const barGradient = chartGroup.append('defs')
         .append('linearGradient')
         .attr('id', 'bar-gradient')
         .attr('x1', '0%').attr('y1', '0%')
@@ -284,22 +334,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .attr('stop-color', '#4F46E5')
         .attr('stop-opacity', 0.6);
 
-      // Add bars with hover effect
-      const bars = svg.selectAll('rect')
-        .data(histogram)
-        .enter()
-        .append('rect')
-        .attr('x', d => x(d.x0 as number))
-        .attr('y', d => y(d.length))
-        .attr('width', d => Math.max(0, x(d.x1 as number) - x(d.x0 as number) - 1))
-        .attr('height', d => height - y(d.length))
-        .attr('fill', 'url(#bar-gradient)')
-        .attr('stroke', '#ffffff')
-        .attr('stroke-width', 1)
-        .attr('rx', 2) // Rounded corners
-        .attr('opacity', 0.9);
-
-      // Add tooltip for bars
+      // Add tooltip
       const tooltip = d3.select(container)
         .append('div')
         .attr('class', 'tooltip')
@@ -316,55 +351,58 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .style('max-width', '200px')
         .style('transition', 'opacity 0.2s');
 
-      // Add hover effects to bars
-      bars.on('mouseover', function(_event: any, d: any) {
+      // Add bars with hover effect and tooltip
+      const bars = chartGroup.selectAll('rect')
+        .data(histogram)
+        .enter()
+        .append('rect')
+        .attr('x', d => x(d.x0 as number))
+        .attr('y', d => y(d.length))
+        .attr('width', d => Math.max(0, x(d.x1 as number) - x(d.x0 as number) - 1))
+        .attr('height', d => height - y(d.length))
+        .attr('fill', 'url(#bar-gradient)')
+        .attr('stroke', '#ffffff')
+        .attr('stroke-width', 1)
+        .attr('rx', 2) // Rounded corners
+        .attr('opacity', 0.9);
+
+      // Add hover effect with tooltip
+      bars.on('mouseover', function(event, d: any) {
+          // Highlight bar
           d3.select(this)
             .transition()
             .duration(200)
             .attr('opacity', 1);
 
           // Calculate tooltip position
-          const svgRect = container.getBoundingClientRect();
-          const barRect = this.getBoundingClientRect();
-
-          // Position tooltip next to the bar
-          const tooltipX = barRect.right - svgRect.left + 5;
-          let tooltipY = barRect.top - svgRect.top + (barRect.height / 2);
-
-          // Make sure tooltip is visible within the container
-          const tooltipWidth = 150; // Approximate width
-          if (tooltipX + tooltipWidth > svgRect.width) {
-            // If tooltip would go outside right edge, position it to the left of the bar
-            tooltip
-              .style('left', (barRect.left - svgRect.left - tooltipWidth - 5) + 'px')
-              .style('top', tooltipY + 'px');
-          } else {
-            tooltip
-              .style('left', tooltipX + 'px')
-              .style('top', tooltipY + 'px');
-          }
-
+          const [mouseX, mouseY] = d3.pointer(event, container);
+          
+          // Show tooltip with data
           tooltip.html(`Emails: ${d.x0} - ${d.x1}<br>Count: ${d.length}`)
+            .style('left', (mouseX + 10) + 'px')
+            .style('top', (mouseY - 25) + 'px')
             .style('opacity', 1);
         })
         .on('mouseout', function() {
+          // Restore bar opacity
           d3.select(this)
             .transition()
             .duration(200)
             .attr('opacity', 0.9);
 
+          // Hide tooltip
           tooltip.style('opacity', 0);
         });
 
       // Add labels
-      svg.append('text')
+      chartGroup.append('text')
         .attr('text-anchor', 'middle')
         .attr('x', width / 2)
         .attr('y', height + margin.bottom - 10)
         .text('Emails per Day')
         .attr('class', 'text-sm text-gray-600');
 
-      svg.append('text')
+      chartGroup.append('text')
         .attr('text-anchor', 'middle')
         .attr('transform', 'rotate(-90)')
         .attr('y', -margin.left + 20)
@@ -373,39 +411,14 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .attr('class', 'text-sm text-gray-600');
     }
 
-    // Add zoom behavior
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 5]) // Allow zoom range: 0.5x to 5x
-      .on('zoom', (event) => {
-        svg.attr('transform', `translate(${margin.left + event.transform.x},${margin.top + event.transform.y}) scale(${event.transform.k})`);
-        setZoomLevel(event.transform.k);
-      });
-
-    // Store zoom behavior in ref for external control
-    zoomRef.current = zoom;
-
-    // Add zoom behavior to SVG
-    d3.select(container).select('svg')
-      .call(zoom as any)
-      .on('dblclick.zoom', null) // Disable double-click zoom
-      .style('cursor', 'grab')
-      .on('mousedown', function() {
-        d3.select(this).style('cursor', 'grabbing');
-      })
-      .on('mouseup', function() {
-        d3.select(this).style('cursor', 'grab');
-      });
-
-
-
   }, [isOpen, chartData, chartType, title]);
 
   // Handle zoom in
   const handleZoomIn = () => {
     if (zoomRef.current && modalChartRef.current) {
-      const svg = d3.select(modalChartRef.current).select('svg');
-      svg.transition().duration(300).call(
-        zoomRef.current.scaleBy, 1.3
+      const baseSvg = d3.select(modalChartRef.current).select('svg');
+      baseSvg.transition().duration(300).call(
+        zoomRef.current.scaleBy, 1.2
       );
     }
   };
@@ -413,19 +426,25 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
   // Handle zoom out
   const handleZoomOut = () => {
     if (zoomRef.current && modalChartRef.current) {
-      const svg = d3.select(modalChartRef.current).select('svg');
-      svg.transition().duration(300).call(
-        zoomRef.current.scaleBy, 0.7
+      const baseSvg = d3.select(modalChartRef.current).select('svg');
+      baseSvg.transition().duration(300).call(
+        zoomRef.current.scaleBy, 0.8
       );
     }
   };
 
   // Handle reset zoom
   const handleResetZoom = () => {
-    if (zoomRef.current && modalChartRef.current) {
-      const svg = d3.select(modalChartRef.current).select('svg');
-      svg.transition().duration(300).call(
-        zoomRef.current.transform, d3.zoomIdentity
+    if (zoomRef.current && modalChartRef.current && marginRef.current) {
+      const baseSvg = d3.select(modalChartRef.current).select('svg');
+      const margin = marginRef.current;
+      
+      // Reset to initial transform
+      baseSvg.transition().duration(300).call(
+        zoomRef.current.transform,
+        d3.zoomIdentity
+          .translate(margin.left, margin.top - 20)
+          .scale(0.85)
       );
     }
   };
@@ -440,85 +459,84 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-              <h2 className="text-xl font-semibold">{title}</h2>
-              <div className="flex items-center space-x-2">
-                <span className="text-xs bg-indigo-800 px-2 py-1 rounded-full shadow-inner">
+        <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-[1400px] h-[700px] flex flex-col overflow-hidden">
+            {/* Header - Made more compact */}
+            <div className="flex justify-between items-center px-8 py-3 bg-gray-50">
+              <div className="flex items-center gap-4">
+                <h2 className="text-lg font-medium text-gray-800">{title}</h2>
+                <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded">
                   Zoom: {Math.round(zoomLevel * 100)}%
                 </span>
-                <button
-                  onClick={onClose}
-                  className="text-white hover:text-gray-200 text-2xl font-bold ml-4 transition-transform hover:scale-110"
-                >
-                  ×
-                </button>
               </div>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 text-xl transition-colors"
+              >
+                ×
+              </button>
             </div>
+
+            {/* Main content area */}
             <div className="relative flex-grow overflow-hidden">
               <div
                 ref={modalChartRef}
-                className="absolute inset-0 bg-gray-50 p-2"
+                className="absolute inset-0 bg-white px-8 py-6"
               >
                 {/* Chart will be rendered here */}
               </div>
 
-              {/* Zoom controls */}
-              <div
-                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 rounded-r-lg shadow-md flex flex-col p-2 z-10"
-                style={{ left: showControls ? '20px' : '-50px', transition: 'left 0.3s ease-in-out' }}
-              >
+              {/* Zoom controls - Moved to top right */}
+              <div className="absolute top-4 right-8 flex items-center gap-2 z-10">
                 <button
                   onClick={handleZoomIn}
-                  className="p-2 hover:bg-gray-200 rounded-full mb-2 transition-colors"
+                  className="p-1.5 hover:bg-gray-50 rounded-md transition-colors text-gray-600 hover:text-gray-800"
                   title="Zoom In"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
                   </svg>
                 </button>
                 <button
                   onClick={handleZoomOut}
-                  className="p-2 hover:bg-gray-200 rounded-full mb-2 transition-colors"
+                  className="p-1.5 hover:bg-gray-50 rounded-md transition-colors text-gray-600 hover:text-gray-800"
                   title="Zoom Out"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
                   </svg>
                 </button>
                 <button
                   onClick={handleResetZoom}
-                  className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                  className="p-1.5 hover:bg-gray-50 rounded-md transition-colors text-gray-600 hover:text-gray-800"
                   title="Reset Zoom"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
                   </svg>
                 </button>
               </div>
-
-              {/* Toggle button */}
-              <button
-                onClick={toggleControls}
-                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 rounded-r-lg shadow-md p-1 z-10 transition-transform hover:scale-110"
-                style={{ left: showControls ? '-100px' : '0' }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                </svg>
-              </button>
             </div>
-            <div className="p-3 border-t flex justify-between items-center bg-gray-50">
+
+            {/* Footer */}
+            <div className="px-8 py-3 flex justify-between items-center bg-gray-50">
               <div className="text-xs text-gray-500">
-                <span className="font-medium">Tip:</span> Drag to pan, scroll to zoom, or use the controls
+                Drag to pan, scroll to zoom, or use the controls
               </div>
-              <button
-                onClick={onClose}
-                className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg shadow transition-all hover:shadow-lg"
-              >
-                Close
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={onClose}
+                  className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm"
+                >
+                  Confirm
+                </button>
+              </div>
             </div>
           </div>
         </div>
