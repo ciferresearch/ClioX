@@ -1129,6 +1129,11 @@ const WordCloud = () => {
 
     shouldUpdateLayoutRef.current = requiresLayoutUpdate;
 
+    // Save current search term if we changed filter options
+    const currentSearchTerm = searchTerm;
+    const stopwordsChanged = tempOptions.stopwordsOption !== stopwordsOption;
+    const whitelistChanged = tempOptions.whitelistOption !== whitelistOption;
+
     // Apply the new settings
     setStopwordsOption(tempOptions.stopwordsOption);
     setWhitelistOption(tempOptions.whitelistOption);
@@ -1142,9 +1147,20 @@ const WordCloud = () => {
     if (optionsChanged) {
       // Short timeout to ensure modal is closed first
       setTimeout(() => {
-        // Always update regardless of layout flag - the debounced update will
-        // decide whether to relayout or just recolor based on shouldUpdateLayoutRef
-        debouncedUpdate(filteredWords);
+        // If we changed stopwords or whitelist options and have an active search term,
+        // we need to reapply the search to see the filters take effect
+        if ((stopwordsChanged || whitelistChanged) && currentSearchTerm) {
+          // Temporarily clear search term to ensure filter changes are applied
+          setSearchTerm('');
+          // Then reapply the search term after a brief delay
+          setTimeout(() => {
+            setSearchTerm(currentSearchTerm);
+          }, 100);
+        } else {
+          // Always update regardless of layout flag - the debounced update will
+          // decide whether to relayout or just recolor based on shouldUpdateLayoutRef
+          debouncedUpdate(filteredWords);
+        }
       }, 50);
     }
   };
@@ -1254,9 +1270,21 @@ const WordCloud = () => {
       setCustomStopwords(newStopwords);
       setStopwordsOption("Custom"); // Switch to custom mode
 
+      // Save current search term to reapply it
+      const currentSearchTerm = searchTerm;
+
       // Force update after modal closes
       setTimeout(() => {
-        debouncedUpdate(filteredWords);
+        // Temporarily clear search term to ensure stopwords filter is applied
+        if (currentSearchTerm) {
+          setSearchTerm('');
+          // Then reapply the search term after a brief delay
+          setTimeout(() => {
+            setSearchTerm(currentSearchTerm);
+          }, 100);
+        } else {
+          debouncedUpdate(filteredWords);
+        }
       }, 50);
     }
 
@@ -1302,9 +1330,21 @@ const WordCloud = () => {
       setCustomWhitelist(newWhitelist);
       setWhitelistOption("Custom"); // Switch to custom mode
 
+      // Save current search term to reapply it
+      const currentSearchTerm = searchTerm;
+
       // Force update after modal closes
       setTimeout(() => {
-        debouncedUpdate(filteredWords);
+        // Temporarily clear search term to ensure whitelist filter is applied
+        if (currentSearchTerm) {
+          setSearchTerm('');
+          // Then reapply the search term after a brief delay
+          setTimeout(() => {
+            setSearchTerm(currentSearchTerm);
+          }, 100);
+        } else {
+          debouncedUpdate(filteredWords);
+        }
       }, 50);
     }
 
@@ -1700,7 +1740,15 @@ const WordCloud = () => {
             onChange={(e) => {
               // Set flag to force update layout on search term change
               shouldUpdateLayoutRef.current = true;
-              setSearchTerm(e.target.value);
+              
+              // Clear the search input to re-apply all filters including stopwords
+              // when search input changes
+              if (e.target.value === '') {
+                setSearchTerm('');
+              } else {
+                // For non-empty searches, create a new search (which will apply all filters)
+                setSearchTerm(e.target.value);
+              }
             }}
             placeholder="Filter words..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md h-10"
