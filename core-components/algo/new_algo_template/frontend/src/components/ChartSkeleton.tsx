@@ -36,7 +36,7 @@ const ChartSkeleton = ({ type = 'line', height = 400 }: ChartSkeletonProps) => {
                     key={i}
                     className="flex-1 bg-gray-200 mx-1 rounded-t"
                     style={{
-                      height: `${Math.random() * 60 + 20}%`,
+                      height: `${30 + (i % 3) * 20}%`,
                       opacity: 0.7 + (i / 20)
                     }}
                   ></div>
@@ -54,7 +54,7 @@ const ChartSkeleton = ({ type = 'line', height = 400 }: ChartSkeletonProps) => {
                     key={i}
                     className="w-12 bg-gray-200 rounded-t"
                     style={{
-                      height: `${Math.random() * 60 + 20}%`,
+                      height: `${40 + (i % 4) * 15}%`,
                       opacity: 0.7 + (i / 20)
                     }}
                   ></div>
