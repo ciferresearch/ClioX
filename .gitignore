@@ -58,8 +58,16 @@ outputs/*.csv
 static/outputs/*.png
 static/outputs/*.csv
 static/data/*.json
+# Data specific JSON files, but not config files
+**/data/*.json
+**/outputs/*.json
+# Don't ignore important config JSON files
+!tsconfig.json
+!package.json
+!package-lock.json
+!*.config.json
+# Other files to ignore
 *.csv
-*.json
 *.log
 *.pdf
 *.png
