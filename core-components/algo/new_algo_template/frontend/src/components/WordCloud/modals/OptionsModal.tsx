@@ -54,14 +54,14 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
   const updateOption = <K extends keyof WordCloudOptions>(
     key: K,
     value: WordCloudOptions[K]
-  ) => {
+  ): void => {
     setTempOptions({
       ...tempOptions,
       [key]: value,
     });
   };
 
-  const resetDefaults = () => {
+  const resetDefaults = (): void => {
     setTempOptions({
       fontFamily: "Palatino",
       colorSelection: "random",

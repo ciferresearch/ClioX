@@ -2,8 +2,6 @@ import { create } from 'zustand';
 import { 
   WordData, 
   WordCloudOptions, 
-  StopwordsOption, 
-  WhitelistOption 
 } from './types';
 import { 
   ENGLISH_STOPWORDS, 
@@ -97,6 +95,8 @@ interface WordCloudStore {
   setWhitelistEditText: (text: string) => void;
   filterWords: () => void;
   autoDetectStopwords: () => void;
+  getActiveStopwords: () => string[];
+  getActiveWhitelist: () => string[];
   getWordColor: (word: string) => string;
   fetchData: () => Promise<void>;
 }
@@ -108,6 +108,17 @@ const STORAGE_KEYS = {
   STOPLIST_ACTIVE: 'wordcloud_stoplist_active',
   WHITELIST: 'wordcloud_whitelist',
   WHITELIST_ACTIVE: 'wordcloud_whitelist_active',
+};
+
+// Helper function to safely parse JSON from localStorage
+const safeJsonParse = <T>(key: string, defaultValue: T): T => {
+  try {
+    const storedValue = localStorage.getItem(key);
+    return storedValue ? JSON.parse(storedValue) as T : defaultValue;
+  } catch (error) {
+    console.error(`Error parsing JSON from localStorage for key "${key}":`, error);
+    return defaultValue;
+  }
 };
 
 // Create the store
@@ -127,15 +138,11 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   isPanelVisible: false,
   
   options: {
-    stopwordsOption: "Auto-detect",
-    whitelistOption: "None",
     fontFamily: "Palatino",
     colorSelection: "random",
     applyGlobally: true
   },
   tempOptions: {
-    stopwordsOption: "Auto-detect",
-    whitelistOption: "None",
     fontFamily: "Palatino",
     colorSelection: "random",
     applyGlobally: true
@@ -154,8 +161,8 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   selectedLanguage: (localStorage.getItem(STORAGE_KEYS.LANGUAGE) as Language) || 'english',
   stoplistActive: localStorage.getItem(STORAGE_KEYS.STOPLIST_ACTIVE) !== 'false',
   whitelistActive: localStorage.getItem(STORAGE_KEYS.WHITELIST_ACTIVE) === 'true',
-  customStopwords: JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_STOPLIST) || '[]'),
-  customWhitelist: JSON.parse(localStorage.getItem(STORAGE_KEYS.WHITELIST) || '[]'),
+  customStopwords: safeJsonParse<string[]>(STORAGE_KEYS.CUSTOM_STOPLIST, []),
+  customWhitelist: safeJsonParse<string[]>(STORAGE_KEYS.WHITELIST, []),
   autoDetectedStopwords: [],
   
   shouldUpdateLayout: false,
@@ -236,16 +243,8 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     // Check if options actually changed
     const optionsChanged = JSON.stringify(tempOptions) !== JSON.stringify(options);
     
-    // Font family change or stopwords/whitelist changes require layout update
-    const requiresLayoutUpdate = 
-      tempOptions.fontFamily !== options.fontFamily ||
-      tempOptions.stopwordsOption !== options.stopwordsOption ||
-      tempOptions.whitelistOption !== options.whitelistOption;
-    
-    // Save current search term to reapply it if needed
-    const currentSearchTerm = searchTerm;
-    const stopwordsChanged = tempOptions.stopwordsOption !== options.stopwordsOption;
-    const whitelistChanged = tempOptions.whitelistOption !== options.whitelistOption;
+    // Font family change requires layout update
+    const requiresLayoutUpdate = tempOptions.fontFamily !== options.fontFamily;
     
     // Apply the new settings
     set({ 
@@ -258,19 +257,7 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     // Handle filter updates if options changed
     if (optionsChanged) {
       setTimeout(() => {
-        // If we changed stopwords or whitelist options and have an active search term,
-        // we need to reapply the search to see the filters take effect
-        if ((stopwordsChanged || whitelistChanged) && currentSearchTerm) {
-          set({ searchTerm: '' });
-          
-          setTimeout(() => {
-            set({ searchTerm: currentSearchTerm });
-            get().filterWords();
-          }, 100);
-        } else {
-          // Just filter words without clearing search term
-          get().filterWords();
-        }
+        get().filterWords();
       }, 50);
     }
   },
@@ -503,8 +490,6 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   resetOptionsToDefaults: () => {
     set({
       tempOptions: {
-        stopwordsOption: "Auto-detect",
-        whitelistOption: "None",
         fontFamily: "Palatino",
         colorSelection: "random",
         applyGlobally: true
@@ -562,15 +547,16 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     
     // Apply search term filter
     if (searchTerm) {
+      const searchTermLower = searchTerm.toLowerCase();
       filtered = filtered.filter((word) =>
-        word.value.toLowerCase().includes(searchTerm.toLowerCase())
+        word.value.toLowerCase().includes(searchTermLower)
       );
     }
     
     // Apply stopwords filter using Sets for better performance
     const stopwords = get().getActiveStopwords();
     if (stopwords.length > 0) {
-      const stopwordsSet = new Set(stopwords);
+      const stopwordsSet = new Set(stopwords.map(word => word.toLowerCase()));
       filtered = filtered.filter(
         (word) => !stopwordsSet.has(word.value.toLowerCase())
       );
@@ -579,7 +565,7 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     // Apply whitelist filter using Sets for better performance
     const whitelist = get().getActiveWhitelist();
     if (whitelist.length > 0) {
-      const whitelistSet = new Set(whitelist);
+      const whitelistSet = new Set(whitelist.map(word => word.toLowerCase()));
       filtered = filtered.filter((word) =>
         whitelistSet.has(word.value.toLowerCase())
       );
@@ -604,13 +590,15 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       const totalWords = words.reduce((sum, word) => sum + word.count, 0);
       const averageFrequency = totalWords / words.length;
       
+      const excludedWords = ["name", "year", "data", "info"];
+      
       // Words that appear much more frequently than average might be stopwords
       const potentialStopwords = words
         .filter(
           (word) =>
             word.count > averageFrequency * 3 && // Much more frequent than average
             word.value.length <= 4 && // Short words are often stopwords
-            !["name", "year", "data", "info"].includes(word.value.toLowerCase()) // Exclude common meaningful short words
+            !excludedWords.includes(word.value.toLowerCase()) // Exclude common meaningful short words
         )
         .map((word) => word.value.toLowerCase());
       
@@ -643,10 +631,11 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     switch (options.colorSelection) {
       case "monochrome":
         return `rgba(0, 0, 255, ${0.3 + ratio * 0.7})`;
-      case "category":
+      case "category": {
         // Use the selected color palette for categorical coloring
         const colorIndex = Math.floor(ratio * CUSTOM_COLORS.length);
         return CUSTOM_COLORS[Math.min(colorIndex, CUSTOM_COLORS.length - 1)];
+      }
       default:
         return wordColors[word] || "#333333";
     }

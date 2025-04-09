@@ -112,7 +112,7 @@ export const useStoplistManager = (): UseStoplistManagerReturn => {
   }, [stoplist.customStoplist]);
 
   // Set the language and fetch the appropriate stoplist
-  const setLanguage = useCallback(async (language: Language) => {
+  const setLanguage = useCallback(async (language: Language): Promise<void> => {
     // Save to localStorage
     localStorage.setItem(STORAGE_KEYS.LANGUAGE, language);
     
@@ -135,7 +135,7 @@ export const useStoplistManager = (): UseStoplistManagerReturn => {
   }, [fetchStoplist]);
 
   // Toggle stoplist active state
-  const toggleStoplist = useCallback(() => {
+  const toggleStoplist = useCallback((): void => {
     setStoplist(prev => {
       const newIsActive = !prev.isActive;
       // Save to localStorage
@@ -145,7 +145,7 @@ export const useStoplistManager = (): UseStoplistManagerReturn => {
   }, []);
 
   // Toggle whitelist active state
-  const toggleWhitelist = useCallback(() => {
+  const toggleWhitelist = useCallback((): void => {
     setWhitelist(prev => {
       const newIsActive = !prev.isActive;
       // Save to localStorage
@@ -155,7 +155,7 @@ export const useStoplistManager = (): UseStoplistManagerReturn => {
   }, []);
 
   // Update custom stoplist
-  const updateCustomStoplist = useCallback((words: string[]) => {
+  const updateCustomStoplist = useCallback((words: string[]): void => {
     // Normalize words (lowercase, trim)
     const normalizedWords = words
       .map(word => word.toLowerCase().trim())
@@ -181,7 +181,7 @@ export const useStoplistManager = (): UseStoplistManagerReturn => {
   }, []);
 
   // Update whitelist
-  const updateWhitelist = useCallback((words: string[]) => {
+  const updateWhitelist = useCallback((words: string[]): void => {
     // Normalize words (lowercase, trim)
     const normalizedWords = words
       .map(word => word.toLowerCase().trim())
@@ -199,7 +199,7 @@ export const useStoplistManager = (): UseStoplistManagerReturn => {
 
   // Load initial stoplist based on selected language
   useEffect(() => {
-    const initializeStoplist = async () => {
+    const initializeStoplist = async (): Promise<void> => {
       const language = stoplist.selectedLanguage;
       const newStoplist = await fetchStoplist(language);
       
