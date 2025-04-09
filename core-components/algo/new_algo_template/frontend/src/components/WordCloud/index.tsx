@@ -204,7 +204,7 @@ const WordCloud = () => {
   // Update word cloud when filtered words change
   useEffect(() => {
     // Skip updates while loading
-    if (isLoading || filteredWords.length === 0) {
+    if (isLoading) {
       return;
     }
 
@@ -213,14 +213,16 @@ const WordCloud = () => {
       return;
     }
 
-    // Always update on slider changes or search term changes
+    // Always update on slider changes, search term changes, or when filtered words is empty
     const isSliderChange = shouldUpdateLayoutRef.current === true;
+    const hasNoFilteredWords = filteredWords.length === 0;
 
     // Skip updates when panel visibility changes or a word is selected/deselected
-    // BUT don't skip if it's a slider change (which should always update)
+    // BUT don't skip if it's a slider change or there are no filtered words (which should always update)
     if (
       (selectedWordRef.current !== null || !shouldUpdateLayoutRef.current) &&
-      !isSliderChange
+      !isSliderChange && 
+      !hasNoFilteredWords
     ) {
       console.log("Skipping layout update due to panel change or word selection");
       return;

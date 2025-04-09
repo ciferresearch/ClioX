@@ -152,6 +152,28 @@ export const useWordCloudVisualization = ({
       }
 
       setIsUpdating(true);
+      
+      // Special case: if there are no words to display, clear the word cloud
+      if (words.length === 0) {
+        const svg = d3.select(svgRef.current);
+        const wordsContainer = svg.select(".words-container");
+        if (!wordsContainer.empty()) {
+          const wordsGroup = wordsContainer.select(".words-group");
+          if (!wordsGroup.empty()) {
+            // Remove all existing words with fade out animation
+            wordsGroup
+              .selectAll<SVGTextElement, CloudWord>("text")
+              .transition()
+              .duration(TRANSITION_DURATION / 2)
+              .style("opacity", 0)
+              .remove();
+          }
+        }
+        previousWordsRef.current = [];
+        setIsUpdating(false);
+        return;
+      }
+      
       const cloudWords = await createWordCloudLayout(words);
       const svg = d3.select(svgRef.current);
 

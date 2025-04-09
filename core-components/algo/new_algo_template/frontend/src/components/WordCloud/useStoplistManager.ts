@@ -58,17 +58,17 @@ const STORAGE_KEYS = {
 export const useStoplistManager = (): UseStoplistManagerReturn => {
   // Initialize state with values from localStorage or defaults
   const [stoplist, setStoplist] = useState<StoplistManagerState>({
-    selectedLanguage: (localStorage.getItem(STORAGE_KEYS.LANGUAGE) as Language) || 'english',
+    selectedLanguage: (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.LANGUAGE) as Language : 'english') || 'english',
     currentStoplist: ENGLISH_STOPWORDS,
-    customStoplist: JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_STOPLIST) || '[]'),
-    isActive: localStorage.getItem(STORAGE_KEYS.STOPLIST_ACTIVE) !== 'false',
+    customStoplist: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_STOPLIST) || '[]') : [],
+    isActive: typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.STOPLIST_ACTIVE) !== 'false' : true,
     isLoading: false,
     error: null,
   });
 
   const [whitelist, setWhitelist] = useState<WhitelistState>({
-    whitelist: JSON.parse(localStorage.getItem(STORAGE_KEYS.WHITELIST) || '[]'),
-    isActive: localStorage.getItem(STORAGE_KEYS.WHITELIST_ACTIVE) === 'true',
+    whitelist: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(STORAGE_KEYS.WHITELIST) || '[]') : [],
+    isActive: typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.WHITELIST_ACTIVE) === 'true' : false,
   });
 
   // Function to fetch stoplist from API based on language

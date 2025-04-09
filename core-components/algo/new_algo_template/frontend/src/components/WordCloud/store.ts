@@ -108,11 +108,14 @@ const STORAGE_KEYS = {
   STOPLIST_ACTIVE: 'wordcloud_stoplist_active',
   WHITELIST: 'wordcloud_whitelist',
   WHITELIST_ACTIVE: 'wordcloud_whitelist_active',
+  MIN_FREQUENCY: 'wordcloud_min_frequency',
+  MAX_WORDS: 'wordcloud_max_words',
 };
 
 // Helper function to safely parse JSON from localStorage
 const safeJsonParse = <T>(key: string, defaultValue: T): T => {
   try {
+    if (typeof window === 'undefined') return defaultValue;
     const storedValue = localStorage.getItem(key);
     return storedValue ? JSON.parse(storedValue) as T : defaultValue;
   } catch (error) {
@@ -130,8 +133,8 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   error: null,
   
   searchTerm: "",
-  minFrequency: 0,
-  maxWords: 100,
+  minFrequency: typeof window !== 'undefined' ? Number(localStorage.getItem(STORAGE_KEYS.MIN_FREQUENCY) || 0) : 0,
+  maxWords: typeof window !== 'undefined' ? Number(localStorage.getItem(STORAGE_KEYS.MAX_WORDS) || 100) : 100,
   dimensions: { width: 800, height: 500 },
   
   selectedWord: null,
@@ -158,9 +161,9 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   originalWhitelistText: "",
   
   // Initialize stoplist/whitelist from localStorage
-  selectedLanguage: (localStorage.getItem(STORAGE_KEYS.LANGUAGE) as Language) || 'english',
-  stoplistActive: localStorage.getItem(STORAGE_KEYS.STOPLIST_ACTIVE) !== 'false',
-  whitelistActive: localStorage.getItem(STORAGE_KEYS.WHITELIST_ACTIVE) === 'true',
+  selectedLanguage: (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.LANGUAGE) as Language : 'english') || 'english',
+  stoplistActive: typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.STOPLIST_ACTIVE) !== 'false' : true,
+  whitelistActive: typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.WHITELIST_ACTIVE) === 'true' : false,
   customStopwords: safeJsonParse<string[]>(STORAGE_KEYS.CUSTOM_STOPLIST, []),
   customWhitelist: safeJsonParse<string[]>(STORAGE_KEYS.WHITELIST, []),
   autoDetectedStopwords: [],
@@ -194,6 +197,11 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       shouldUpdateLayout: true
     });
     
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.MIN_FREQUENCY, minFrequency.toString());
+    }
+    
     // After setting min frequency, filter words
     setTimeout(() => {
       get().filterWords();
@@ -204,6 +212,11 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       maxWords,
       shouldUpdateLayout: true 
     });
+    
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.MAX_WORDS, maxWords.toString());
+    }
     
     // After setting max words, filter words
     setTimeout(() => {
@@ -577,8 +590,17 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       .sort((a, b) => b.count - a.count)
       .slice(0, maxWords);
     
-    // Update filtered words
-    set({ filteredWords: filtered });
+    // Update filtered words and always force layout update when filtered words change
+    const hadWords = get().filteredWords.length > 0;
+    const hasWords = filtered.length > 0;
+    
+    // If we're transitioning from having words to no words (or vice versa), we need to force a layout update
+    const needsForceUpdate = hadWords !== hasWords;
+    
+    set({ 
+      filteredWords: filtered,
+      shouldUpdateLayout: needsForceUpdate ? true : get().shouldUpdateLayout
+    });
   },
   
   // Auto-detect stopwords based on word frequencies
@@ -659,12 +681,27 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       
       const data = await response.json();
       
-      // Set the words data
+      // Calculate the minimum frequency in the dataset
+      const minCount = Math.min(...data.wordCloudData.map((w: WordData) => w.count));
+      
+      // Get current min frequency
+      const { minFrequency } = get();
+      
+      // If minFrequency is 0, set it to the minimum value from the dataset
+      const newMinFrequency = minFrequency === 0 ? minCount : minFrequency;
+      
+      // Set the words data and update minimum frequency if needed
       set({ 
         words: data.wordCloudData,
         filteredWords: data.wordCloudData,
+        minFrequency: newMinFrequency,
         isLoading: false
       });
+      
+      // Save min frequency to localStorage if it was updated
+      if (newMinFrequency !== minFrequency && typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEYS.MIN_FREQUENCY, newMinFrequency.toString());
+      }
       
       // Auto-detect stopwords after loading data
       setTimeout(() => {
