@@ -16,6 +16,7 @@ interface UseWordCloudVisualizationProps {
   isPanelVisibleRef: MutableRefObject<boolean>;
   shouldUpdateLayoutRef: MutableRefObject<boolean>;
   modalsOpenRef: MutableRefObject<boolean>;
+  isWordSelectionActionRef: MutableRefObject<boolean>;
   onWordSelect: (word: WordData) => void;
 }
 
@@ -30,6 +31,7 @@ export const useWordCloudVisualization = ({
   isPanelVisibleRef,
   shouldUpdateLayoutRef,
   modalsOpenRef,
+  isWordSelectionActionRef,
   onWordSelect,
 }: UseWordCloudVisualizationProps) => {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -125,36 +127,32 @@ export const useWordCloudVisualization = ({
       // Don't update if we're not visible
       if (svgRef.current.closest("div")?.offsetParent === null) return;
 
-      // Skip updates if modals are open, except when called directly from save handlers
+      // Skip updates if modals are open
       if (modalsOpenRef.current) {
         console.log("Skipping update because modals are open");
         return;
       }
 
-      // If panel just opened/closed, don't do a full relayout
-      if (!shouldUpdateLayoutRef.current && selectedWordRef.current !== null) {
-        console.log("Panel visibility change detected, skipping layout update");
-
-        // Just update colors without relayout
-        const svg = d3.select(svgRef.current);
-        const wordsContainer = svg.select(".words-container");
-        if (!wordsContainer.empty()) {
-          const wordsGroup = wordsContainer.select(".words-group");
-          if (!wordsGroup.empty()) {
-            // Update colors for existing words without changing positions
-            wordsGroup
-              .selectAll<SVGTextElement, CloudWord>("text")
-              .style("fill", getWordColor)
-              .style("font-family", fontFamily);
-          }
-        }
-        return;
+      // There are two cases where we want to avoid complete relayout:
+      // 1. Word selection/panel interaction (tracked by isWordSelectionActionRef)
+      // 2. Panel visibility change (opening or closing panel)
+      const isPanelClosing = selectedWordRef.current === null && isWordSelectionActionRef.current;
+      const isWordSelecting = isWordSelectionActionRef.current && selectedWordRef.current !== null;
+      const isWordSelectionOrPanelAction = isWordSelecting || isPanelClosing;
+      
+      if (isPanelClosing) {
+        console.log("Panel is closing, skipping layout update");
       }
-
-      setIsUpdating(true);
+      
+      // Check if SVG needs readjustment after container size changes
+      // (like when panel opens/closes)
+      const needsSvgCentering = isPanelVisibleRef.current !== undefined && 
+                               svgRef.current && 
+                               svgRef.current.parentElement;
       
       // Special case: if there are no words to display, clear the word cloud
       if (words.length === 0) {
+        setIsUpdating(true);
         const svg = d3.select(svgRef.current);
         const wordsContainer = svg.select(".words-container");
         if (!wordsContainer.empty()) {
@@ -173,6 +171,56 @@ export const useWordCloudVisualization = ({
         setIsUpdating(false);
         return;
       }
+      
+      // For panel changes or word selections:
+      // - Don't relayout the cloud (preserve positions)
+      // - But still update colors/fonts, ensure words are visible, and recenter if needed
+      if (isWordSelectionOrPanelAction) {
+        console.log(isPanelClosing ? "Panel closing detected" : "Word selection detected");
+        console.log("Skipping layout update");
+
+        // Check if we already have words displayed
+        const svg = d3.select(svgRef.current);
+        const wordsContainer = svg.select(".words-container");
+        
+        if (wordsContainer.empty()) {
+          // If container is empty, we need to do a full render anyway
+          console.log("No existing words found, doing full render despite panel action");
+        } else {
+          const wordsGroup = wordsContainer.select(".words-group");
+          const existingWords = wordsGroup.selectAll<SVGTextElement, CloudWord>("text");
+          
+          // If we have words already displayed, just update colors/fonts without relayout
+          if (!existingWords.empty() && existingWords.size() > 0) {
+            // 1. Update existing words' styling
+            existingWords
+              .style("fill", getWordColor)
+              .style("font-family", fontFamily);
+            
+            // 2. If panel state changed, recenter the visualization
+            if (needsSvgCentering || isPanelClosing) {
+              // Recenter words - make sure they're in the middle of the new container size
+              const svgWidth = parseInt(svg.style("width"));
+              const svgHeight = parseInt(svg.style("height"));
+              
+              // Smoothly transition to new center position
+              wordsGroup
+                .transition()
+                .duration(300)
+                .attr("transform", `translate(${svgWidth / 2},${svgHeight / 2})`);
+              
+              console.log("Recentered words after panel state change");
+            }
+            
+            return;
+          } else {
+            console.log("No existing words found in group, proceeding with full render");
+          }
+        }
+      }
+
+      // Proceed with full render
+      setIsUpdating(true);
       
       const cloudWords = await createWordCloudLayout(words);
       const svg = d3.select(svgRef.current);
@@ -580,6 +628,51 @@ export const useWordCloudVisualization = ({
       return () => clearTimeout(timer);
     }
   }, [isLoading, words, debouncedUpdate]);
+
+  // Monitor panel visibility changes and recenter visualization when needed
+  useEffect(() => {
+    if (!svgRef.current || !svgRef.current.parentElement) return;
+    
+    // Use a MutationObserver to detect container size changes
+    // This will handle cases like panel opening/closing
+    const container = svgRef.current.parentElement;
+    const observer = new ResizeObserver(() => {
+      // Only proceed if we have words already and it's not during initial load
+      if (previousWordsRef.current.length === 0 || isLoading || modalsOpenRef.current) {
+        return;
+      }
+      
+      // Update centering without relayout
+      const svg = d3.select(svgRef.current!);
+      const wordsContainer = svg.select(".words-container");
+      
+      if (!wordsContainer.empty()) {
+        const wordsGroup = wordsContainer.select(".words-group");
+        
+        if (!wordsGroup.empty()) {
+          // Get current size
+          const svgWidth = parseInt(svg.style("width"));
+          const svgHeight = parseInt(svg.style("height"));
+          
+          // Smoothly transition to new center
+          wordsGroup
+            .transition()
+            .duration(300)
+            .attr("transform", `translate(${svgWidth / 2},${svgHeight / 2})`);
+          
+          console.log("Container resized, recentering words");
+        }
+      }
+    });
+    
+    // Start observing the container
+    observer.observe(container);
+    
+    // Clean up
+    return () => {
+      observer.disconnect();
+    };
+  }, [isLoading]);
 
   return {
     isUpdating,

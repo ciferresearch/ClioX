@@ -27,6 +27,7 @@ interface WordCloudStore {
   // Selected word states
   selectedWord: WordData | null;
   isPanelVisible: boolean;
+  isWordSelectionAction: boolean;
   
   // Options states
   options: WordCloudOptions;
@@ -139,6 +140,7 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   
   selectedWord: null,
   isPanelVisible: false,
+  isWordSelectionAction: false,
   
   options: {
     fontFamily: "Palatino",
@@ -183,7 +185,8 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     // Set flag to force update layout on search term change
     set({ 
       searchTerm,
-      shouldUpdateLayout: true 
+      shouldUpdateLayout: true,
+      isWordSelectionAction: false // Not a word selection action
     });
     
     // After setting search term, filter words
@@ -194,7 +197,8 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   setMinFrequency: (minFrequency) => {
     set({ 
       minFrequency,
-      shouldUpdateLayout: true
+      shouldUpdateLayout: true,
+      isWordSelectionAction: false // Not a word selection action
     });
     
     // Save to localStorage
@@ -210,7 +214,8 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   setMaxWords: (maxWords) => {
     set({ 
       maxWords,
-      shouldUpdateLayout: true 
+      shouldUpdateLayout: true,
+      isWordSelectionAction: false // Not a word selection action
     });
     
     // Save to localStorage
@@ -225,14 +230,19 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   },
   setDimensions: (dimensions) => set({ dimensions }),
   setSelectedWord: (selectedWord) => {
-    // Don't trigger layout update when selecting a word
+    // When selecting a word or closing panel, mark this as a word selection action
+    // This flag helps prevent layout updates during panel interactions
     set({ 
       selectedWord,
+      isPanelVisible: selectedWord !== null,
       shouldUpdateLayout: false,
-      isPanelVisible: selectedWord !== null
+      isWordSelectionAction: true // Always flag this as a word selection action, even when closing panel
     });
   },
-  setShouldUpdateLayout: (shouldUpdateLayout) => set({ shouldUpdateLayout }),
+  setShouldUpdateLayout: (shouldUpdateLayout) => set({ 
+    shouldUpdateLayout,
+    isWordSelectionAction: false // Reset word selection flag
+  }),
   setIsUpdating: (isUpdating) => set({ isUpdating }),
   
   // Modal actions
@@ -550,7 +560,8 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       searchTerm, 
       minFrequency, 
       maxWords,
-      modalsOpen
+      modalsOpen,
+      isWordSelectionAction // Get the word selection action flag
     } = get();
     
     // Skip filtering if modals are open
@@ -590,16 +601,21 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       .sort((a, b) => b.count - a.count)
       .slice(0, maxWords);
     
-    // Update filtered words and always force layout update when filtered words change
+    // Calculate if layout update is needed
+    // If this was a word selection action, we want to avoid layout updates
+    // except for transitions between having words and not having words
     const hadWords = get().filteredWords.length > 0;
     const hasWords = filtered.length > 0;
     
-    // If we're transitioning from having words to no words (or vice versa), we need to force a layout update
-    const needsForceUpdate = hadWords !== hasWords;
+    // Force update only when transitioning between having/not having words
+    // AND it's not a word selection action
+    const needsForceUpdate = (hadWords !== hasWords) && !isWordSelectionAction;
     
     set({ 
       filteredWords: filtered,
-      shouldUpdateLayout: needsForceUpdate ? true : get().shouldUpdateLayout
+      // Only update layout if needed and not a word selection action
+      shouldUpdateLayout: isWordSelectionAction ? false : 
+                          needsForceUpdate ? true : get().shouldUpdateLayout
     });
   },
   

@@ -28,6 +28,7 @@ const WordCloud = () => {
     dimensions,
     selectedWord,
     isPanelVisible,
+    isWordSelectionAction,
     
     // Options and modal states
     options,
@@ -89,6 +90,7 @@ const WordCloud = () => {
   const selectedWordRef = useRef(selectedWord);
   const isPanelVisibleRef = useRef(isPanelVisible);
   const modalsOpenRef = useRef(isOptionsModalOpen || isStopwordsModalOpen || isWhitelistModalOpen);
+  const isWordSelectionActionRef = useRef(isWordSelectionAction);
   
   // Keep refs in sync with store state
   useEffect(() => {
@@ -107,6 +109,10 @@ const WordCloud = () => {
     modalsOpenRef.current = isOptionsModalOpen || isStopwordsModalOpen || isWhitelistModalOpen;
   }, [isOptionsModalOpen, isStopwordsModalOpen, isWhitelistModalOpen]);
 
+  useEffect(() => {
+    isWordSelectionActionRef.current = isWordSelectionAction;
+  }, [isWordSelectionAction]);
+
   // Word cloud visualization hook (using our store state through refs)
   const { resetZoom, debouncedUpdate } = useWordCloudVisualization({
     svgRef,
@@ -119,12 +125,12 @@ const WordCloud = () => {
     isPanelVisibleRef,
     shouldUpdateLayoutRef,
     modalsOpenRef,
+    isWordSelectionActionRef,
     onWordSelect: (word) => {
-      // Don't trigger layout update when selecting a word
-      setShouldUpdateLayout(false);
-      
-      // Set selected word and show panel
+      // Let the store handle all state updates
       setSelectedWord(word);
+      
+      console.log("Word selected:", word.value);
     },
   });
 
@@ -134,23 +140,21 @@ const WordCloud = () => {
       const container = svgRef.current?.parentElement;
       if (!container) return;
 
-      // If user just closed the panel, force prevent relayout
-      if (selectedWord === null && !isPanelVisible) {
-        shouldUpdateLayoutRef.current = false;
-      }
-
+      // Calculate dimensions based on container size only
+      // Panel state will be handled by CSS flex layout
       const containerWidth = container.clientWidth;
-      const effectiveWidth = isPanelVisible
-        ? containerWidth - 256 - 16
-        : containerWidth;
-
-      const newWidth = Math.max(effectiveWidth - 32, 400);
+      
+      // Set new dimensions (with minimum width guarantee)
+      const newWidth = Math.max(containerWidth - 32, 400); // account for padding
       const newHeight = Math.min(550, window.innerHeight * 0.6);
 
+      // Update dimensions in store
       setDimensions({
         width: newWidth,
         height: newHeight,
       });
+      
+      console.log(`Dimensions updated: ${newWidth}x${newHeight}`);
     }, 250);
 
     // Only add resize listener on client side
@@ -159,25 +163,27 @@ const WordCloud = () => {
       window.addEventListener("resize", handleResize);
       return () => window.removeEventListener("resize", handleResize);
     }
-  }, [setDimensions, selectedWord, isPanelVisible]);
+  }, [setDimensions]);
 
   // Reset zoom when search/filter changes
   useEffect(() => {
     // If this is a slider change, we DO want to reset zoom
     const isSliderChange = shouldUpdateLayout === true;
 
-    // Skip zoom reset if this update was triggered by panel visibility change
+    // Skip zoom reset if:
+    // - This is a panel state change (isPanelVisible changed)
+    // - OR a word selection/deselection 
     // BUT don't skip for slider changes or search term changes
     if (
       !isSliderChange &&
-      (selectedWord !== null || !shouldUpdateLayout)
+      (selectedWord !== null || isWordSelectionAction || !shouldUpdateLayout)
     ) {
       return;
     }
 
     // Reset zoom when filtered words change (search, filter, etc.)
     resetZoom();
-  }, [filteredWords, minFrequency, maxWords, searchTerm, resetZoom, selectedWord, shouldUpdateLayout]);
+  }, [filteredWords, minFrequency, maxWords, searchTerm, resetZoom, selectedWord, isWordSelectionAction, shouldUpdateLayout]);
 
   // Fetch data on initial load
   useEffect(() => {
@@ -213,32 +219,26 @@ const WordCloud = () => {
       return;
     }
 
-    // Always update on slider changes, search term changes, or when filtered words is empty
-    const isSliderChange = shouldUpdateLayoutRef.current === true;
-    const hasNoFilteredWords = filteredWords.length === 0;
-
-    // Skip updates when panel visibility changes or a word is selected/deselected
-    // BUT don't skip if it's a slider change or there are no filtered words (which should always update)
-    if (
-      (selectedWordRef.current !== null || !shouldUpdateLayoutRef.current) &&
-      !isSliderChange && 
-      !hasNoFilteredWords
-    ) {
-      console.log("Skipping layout update due to panel change or word selection");
+    // When a word is selected or panel is closed:
+    // - Both are marked as isWordSelectionAction = true in the store
+    // - Allow update but mark it as a word selection to prevent relayout
+    // - The debouncedUpdate function will handle this correctly
+    if (isWordSelectionAction) {
+      console.log("Panel state change detected (open/close), allowing update with isWordSelectionAction flag");
+      debouncedUpdate(filteredWords);
       return;
     }
 
-    console.log("Updating layout");
-    
-    // Queue this for next tick to avoid re-renders during rendering
-    if (shouldUpdateLayoutRef.current) {
-      requestAnimationFrame(() => {
-        shouldUpdateLayoutRef.current = false;
-      });
-    }
-    
+    // For all other updates, proceed normally
+    console.log("Normal layout update");
     debouncedUpdate(filteredWords);
-  }, [filteredWords, isLoading, debouncedUpdate]);
+  }, [
+    filteredWords, 
+    isLoading, 
+    modalsOpenRef, 
+    isWordSelectionAction, 
+    debouncedUpdate
+  ]);
 
   // Min/max count for sliders
   const minCount =
@@ -246,14 +246,40 @@ const WordCloud = () => {
   const maxCount =
     words.length > 0 ? Math.max(...words.map((w: { count: number }) => w.count)) : 100;
 
-  // Handle panel close
+  // Handle panel close with smooth transition
   const handlePanelClose = () => {
-    // Force prevent layout update
-    shouldUpdateLayoutRef.current = false;
-    
-    // Clear selected word
+    // Let the store handle the state updates
+    // The store will set isWordSelectionAction to true, preventing layout
     setSelectedWord(null);
+    
+    // Record panel close in console for debugging
+    console.log("Panel closed with smooth transition");
   };
+
+  // When panel state changes (appearing or disappearing),
+  // ensure the container adjusts properly but doesn't trigger relayout
+  useEffect(() => {
+    const container = svgRef.current?.parentElement?.parentElement;
+    if (!container) return;
+
+    // Force container to adjust its size without triggering wordcloud relayout
+    const adjustContainerSize = () => {
+      requestAnimationFrame(() => {
+        // Just accessing clientWidth can sometimes trigger reflow 
+        // without causing full recalculation
+        const _ = container.clientWidth;
+      });
+    };
+    
+    adjustContainerSize();
+    
+    // After transition completes (300ms is our transition duration)
+    const timer = setTimeout(() => {
+      adjustContainerSize();
+    }, 350);
+    
+    return () => clearTimeout(timer);
+  }, [isPanelVisible]);
 
   // Handle filtering to a selected word
   const handleFilterToWord = (word: string) => {
@@ -335,67 +361,73 @@ const WordCloud = () => {
       </div>
 
       <div className="flex flex-col md:flex-row gap-4">
-        {/* Word cloud visualization with minimum width */}
-        <div
-          className="flex-1 h-[550px] bg-gray-50 rounded flex items-center justify-center p-4 overflow-hidden relative wordcloud-container"
-          style={{ minWidth: selectedWord ? "400px" : "auto" }}
+        {/* Main container - using CSS Grid for smoother transitions */}
+        <div 
+          className={`grid transition-all duration-300 ease-in-out gap-4 ${
+            isPanelVisible ? 'grid-cols-[1fr_auto]' : 'grid-cols-[1fr]'
+          }`}
+          style={{ width: '100%' }}
         >
-          {isLoading && (
-            <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-              <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                <span className="text-gray-500">Loading...</span>
+          {/* Word cloud visualization - will automatically adjust with CSS Grid */}
+          <div
+            className="h-[550px] bg-gray-50 rounded flex items-center justify-center p-4 overflow-hidden relative wordcloud-container"
+          >
+            {isLoading && (
+              <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                  <span className="text-gray-500">Loading...</span>
+                </div>
               </div>
-            </div>
-          )}
-          
-          {error ? (
-            <ChartError 
-              message={error} 
-              onRetry={fetchData}
-            />
-          ) : isUpdating ? (
-            <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-              <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                <span className="text-gray-500">Updating...</span>
+            )}
+            
+            {error ? (
+              <ChartError 
+                message={error} 
+                onRetry={fetchData}
+              />
+            ) : isUpdating ? (
+              <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                  <span className="text-gray-500">Updating...</span>
+                </div>
               </div>
-            </div>
-          ) : (
-            <svg
-              ref={svgRef}
-              width="100%"
-              height="100%"
-              style={{
-                maxWidth: "100%",
-                maxHeight: "100%",
-                minWidth: selectedWord ? "400px" : "auto",
-                cursor: "grab",
-              }}
-              className={isUpdating ? "opacity-50" : "opacity-100"}
-            />
-          )}
-          
-          <style jsx>{`
-            .wordcloud-container svg:active {
-              cursor: grabbing;
-            }
-            .cloud-word {
-              user-select: none;
-            }
-          `}</style>
-        </div>
+            ) : (
+              <svg
+                ref={svgRef}
+                width="100%"
+                height="100%"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  cursor: "grab",
+                }}
+                className={isUpdating ? "opacity-50" : "opacity-100"}
+              />
+            )}
+            
+            <style jsx>{`
+              .wordcloud-container svg:active {
+                cursor: grabbing;
+              }
+              .cloud-word {
+                user-select: none;
+              }
+            `}</style>
+          </div>
 
-        {/* Word details panel */}
-        {selectedWord && (
-          <WordDetailPanel
-            selectedWord={selectedWord}
-            onClose={handlePanelClose}
-            onFilterToWord={handleFilterToWord}
-            maxCount={maxCount}
-            allWords={words}
-          />
-        )}
+          {/* Word details panel - conditional rendering with CSS Grid */}
+          {selectedWord && (
+            <WordDetailPanel
+              selectedWord={selectedWord}
+              onClose={handlePanelClose}
+              onFilterToWord={handleFilterToWord}
+              maxCount={maxCount}
+              allWords={words}
+            />
+          )}
+        </div>
       </div>
 
       {/* Word frequency summary */}
