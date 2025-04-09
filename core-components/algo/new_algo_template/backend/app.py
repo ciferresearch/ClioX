@@ -250,7 +250,11 @@ def get_email_distribution_data():
 
             # Save to CSV
             os.makedirs('static/data', exist_ok=True)
-            date_counts[['emails_per_day']].to_csv('static/data/email_per_day_distribution_data.csv', index=False)
+            # Make sure we have both time and emails_per_day columns
+            if 'time' not in date_counts.columns:
+                date_counts = date_counts.reset_index()
+                date_counts.columns = ['time', 'emails_per_day']
+            date_counts.to_csv('static/data/email_per_day_distribution_data.csv', index=False)
 
             with open('static/data/email_per_day_distribution_data.csv', 'r') as f:
                 csv_data = f.read()

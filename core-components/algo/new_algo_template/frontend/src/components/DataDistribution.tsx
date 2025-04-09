@@ -316,6 +316,12 @@ const DataDistribution = ({
         return +d[firstKey];
       };
 
+      // Add index as time if not present
+      const dataWithIndex = data.map((d, i) => ({
+        ...d,
+        index: i
+      }));
+
       const values = data.map(getEmailValue).filter(v => !isNaN(v));
 
       if (values.length === 0) {
@@ -326,10 +332,20 @@ const DataDistribution = ({
 
       // Create histogram data
       const maxValue = d3.max(values) as number;
-      const histogram = d3.bin()
-        .domain([0, maxValue + 1])
-        .thresholds(d3.range(0, maxValue + 2))
-        (values);
+
+      // Create a simple histogram-like data structure
+      // Count occurrences of each value
+      const valueCounts = new Map();
+      values.forEach(value => {
+        valueCounts.set(value, (valueCounts.get(value) || 0) + 1);
+      });
+
+      // Convert to histogram format
+      const histogram = Array.from(valueCounts.entries()).map(([value, count]) => ({
+        x0: value,
+        x1: +value + 1,
+        length: count
+      })).sort((a, b) => a.x0 - b.x0);
 
       // Set up scales
       const x = d3.scaleLinear()
