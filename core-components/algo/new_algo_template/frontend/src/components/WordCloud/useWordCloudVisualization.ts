@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, MutableRefObject } from 'react';
+import { useEffect, useRef, useCallback, MutableRefObject, useState } from 'react';
 import * as d3 from 'd3';
 import cloud from 'd3-cloud';
 import debounce from 'lodash/debounce';
@@ -76,6 +76,10 @@ export const useWordCloudVisualization = ({
   const createWordCloudLayout = useCallback(
     (words: WordData[]): Promise<CloudWord[]> => {
       return new Promise((resolve) => {
+        // Make sure we have valid dimensions before creating layout
+        const width = dimensions?.width || 500;
+        const height = dimensions?.height || 400;
+        
         const fontScale = d3
           .scaleLog()
           .domain([
@@ -85,7 +89,7 @@ export const useWordCloudVisualization = ({
           .range([12, 50]);
 
         const layout = cloud<Word>()
-          .size([dimensions.width, dimensions.height])
+          .size([width, height])
           .words(
             words.map((w) => ({
               text: w.value,
@@ -561,7 +565,4 @@ export const useWordCloudVisualization = ({
     resetZoom,
     debouncedUpdate
   };
-};
-
-// Need to import useState at the top
-import { useState } from 'react'; 
+}; 
