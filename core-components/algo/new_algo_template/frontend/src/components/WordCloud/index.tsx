@@ -40,6 +40,11 @@ const WordCloud = () => {
     stopwordsEditText,
     whitelistEditText,
     
+    // Stoplist/Whitelist states
+    selectedLanguage,
+    stoplistActive,
+    whitelistActive,
+    
     // Flags
     shouldUpdateLayout,
     isUpdating,
@@ -63,6 +68,11 @@ const WordCloud = () => {
     openWhitelistModal,
     closeWhitelistModal,
     saveWhitelist,
+    
+    // Stoplist/Whitelist actions
+    setLanguage,
+    toggleStoplist,
+    toggleWhitelist,
     
     // Option actions
     updateTempOptions,
@@ -264,7 +274,6 @@ const WordCloud = () => {
         </button>
       </div>
 
-      {/* Controls */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div className="flex flex-col">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -389,15 +398,33 @@ const WordCloud = () => {
 
       {/* Word frequency summary */}
       <div className="mt-4 p-3 bg-gray-50 rounded text-sm text-gray-600">
-        Showing {filteredWords.length} of {words.length} words.
-        {filteredWords.length > 0 && (
-          <span>
-            {" "}
-            Frequency range: {Math.min(
-              ...filteredWords.map((w: { count: number }) => w.count)
-            )} to {Math.max(...filteredWords.map((w: { count: number }) => w.count))}
-          </span>
-        )}
+        <div className="flex flex-wrap gap-2 justify-between items-center">
+          <div>
+            Showing {filteredWords.length} of {words.length} words.
+            {filteredWords.length > 0 && (
+              <span>
+                {" "}
+                Frequency range: {Math.min(
+                  ...filteredWords.map((w: { count: number }) => w.count)
+                )} to {Math.max(...filteredWords.map((w: { count: number }) => w.count))}
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-4 text-xs">
+            {stoplistActive && (
+              <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full">
+                {selectedLanguage === 'custom' ? 'Custom Stopwords' : `${selectedLanguage} Stopwords`}
+              </span>
+            )}
+            
+            {whitelistActive && (
+              <span className="px-2 py-1 bg-green-50 text-green-700 rounded-full">
+                Whitelist Active
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Options Modal */}
@@ -413,6 +440,14 @@ const WordCloud = () => {
         }}
         onClose={closeOptionsModal}
         onSave={saveOptions}
+        
+        // Stoplist/Whitelist related props
+        selectedLanguage={selectedLanguage}
+        stoplistActive={stoplistActive}
+        whitelistActive={whitelistActive}
+        setLanguage={setLanguage}
+        toggleStoplist={toggleStoplist}
+        toggleWhitelist={toggleWhitelist}
         onOpenStopwordsModal={openStopwordsModal}
         onOpenWhitelistModal={openWhitelistModal}
       />
@@ -425,6 +460,7 @@ const WordCloud = () => {
         value={stopwordsEditText}
         onChange={setStopwordsEditText}
         onSave={saveStopwords}
+        language={selectedLanguage}
       />
 
       {/* Whitelist Edit Modal */}

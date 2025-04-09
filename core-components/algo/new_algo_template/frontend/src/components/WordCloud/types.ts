@@ -28,12 +28,11 @@ export interface Dimensions {
 
 export type ColorScheme = "random" | "monochrome" | "category";
 
+// These are kept for backward compatibility but no longer used in the new implementation
 export type StopwordsOption = "Auto-detect" | "None" | "English" | "Custom";
 export type WhitelistOption = "None" | "Custom";
 
 export interface WordCloudOptions {
-  stopwordsOption: StopwordsOption;
-  whitelistOption: WhitelistOption;
   fontFamily: string;
   colorSelection: ColorScheme;
   applyGlobally: boolean;

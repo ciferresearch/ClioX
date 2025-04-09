@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 
 interface ListEditModalProps {
   isOpen: boolean;
@@ -7,6 +7,7 @@ interface ListEditModalProps {
   value: string;
   onChange: (value: string) => void;
   onSave: () => void;
+  language?: string;
 }
 
 const ListEditModal: React.FC<ListEditModalProps> = ({
@@ -16,11 +17,13 @@ const ListEditModal: React.FC<ListEditModalProps> = ({
   value,
   onChange,
   onSave,
+  language = 'english'
 }) => {
   if (!isOpen) return null;
 
   const isStoplist = title.includes("Stopwords") || title.includes("Stoplist");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isDirty, setIsDirty] = useState(false);
 
   // Prevent event propagation to parent elements
   const handleContentClick = (e: React.MouseEvent) => {
@@ -30,12 +33,21 @@ const ListEditModal: React.FC<ListEditModalProps> = ({
   // Update onChange handler to sync textarea content with state
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e.target.value);
+    if (!isDirty) setIsDirty(true);
   };
 
   // Handle save - directly use the value from state
   const handleSaveClick = () => {
     onSave();
+    setIsDirty(false);
   };
+
+  // Reset dirty state when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setIsDirty(false);
+    }
+  }, [isOpen]);
 
   // Focus textarea when modal opens and position cursor at end
   useEffect(() => {
@@ -54,13 +66,18 @@ const ListEditModal: React.FC<ListEditModalProps> = ({
     .split("\n")
     .filter((line) => line.trim().length > 0).length;
 
+  // Check for duplicates
+  const lines = value.split("\n").map(line => line.trim().toLowerCase()).filter(Boolean);
+  const uniqueLines = new Set(lines);
+  const hasDuplicates = lines.length !== uniqueLines.size;
+
   return (
     <div
-      className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+      className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-lg max-w-[400px] w-full overflow-hidden"
+        className="bg-white rounded-xl shadow-lg max-w-md w-full overflow-hidden"
         onClick={handleContentClick}
       >
         <div className="px-8 py-3 bg-gray-50 flex justify-between items-center">
@@ -68,15 +85,16 @@ const ListEditModal: React.FC<ListEditModalProps> = ({
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-xl transition-colors cursor-pointer"
+            aria-label="Close modal"
           >
             ×
           </button>
         </div>
 
-        <div className="p-4">
+        <div className="p-6">
           {isStoplist && (
-            <div className="flex items-center mb-2">
-              <div className="mr-2 flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
+            <div className="flex items-start mb-4">
+              <div className="mr-2 flex-shrink-0 w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 mt-0.5">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -92,43 +110,92 @@ const ListEditModal: React.FC<ListEditModalProps> = ({
                   />
                 </svg>
               </div>
-              <p className="text-gray-600 text-sm">
-                This is the stoplist, one term per line.
-              </p>
+              <div>
+                <p className="text-gray-700 text-sm mb-1">
+                  Enter one word per line that you want to exclude from the visualization.
+                </p>
+                <p className="text-gray-500 text-xs">
+                  {`Currently using ${language} stopwords. Changes will be saved to your custom stoplist.`}
+                </p>
+              </div>
             </div>
           )}
           {!isStoplist && (
-            <p className="text-xs text-gray-600 mb-2">
-              Enter one word per line. All entries will be converted to
-              lowercase.
-            </p>
+            <div className="flex items-start mb-4">
+              <div className="mr-2 flex-shrink-0 w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-500 mt-0.5">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="text-gray-700 text-sm mb-1">
+                  Enter one word per line that you want to include in the visualization.
+                </p>
+                <p className="text-gray-500 text-xs">
+                  Only words in this list will be shown if whitelist is enabled.
+                </p>
+              </div>
+            </div>
           )}
-          <div className="relative">
+          <div className="relative mb-2">
             <textarea
               ref={textareaRef}
               value={value}
               onChange={handleTextChange}
-              placeholder="Enter one word per line"
-              className="w-full h-48 border border-gray-300 rounded p-2 font-mono text-sm resize-none"
+              placeholder={isStoplist ? "Enter words to exclude..." : "Enter words to include..."}
+              className="w-full h-64 border border-gray-300 rounded-md p-3 font-mono text-sm resize-none focus:ring-blue-500 focus:border-blue-500"
+              aria-label={isStoplist ? "Stopwords list" : "Whitelist"}
             />
-            <div className="text-xs text-gray-500 mt-1">
-              {wordCount} words
+            <div className="flex justify-between text-xs text-gray-500 mt-1.5">
+              <div>
+                {hasDuplicates && (
+                  <span className="text-amber-600">
+                    ⚠️ Contains duplicates
+                  </span>
+                )}
+              </div>
+              <div>
+                {wordCount} {wordCount === 1 ? 'word' : 'words'}
+              </div>
             </div>
+          </div>
+          
+          <div className="bg-gray-50 rounded p-2.5 mb-2">
+            <p className="text-xs text-gray-600">
+              <strong>Tips:</strong> Words are case-insensitive. Empty lines and duplicates will be removed automatically.
+              {isStoplist && " Common stopwords like 'the', 'and', 'to' should be included."}
+              {!isStoplist && " Add only the specific words you want to show."}
+            </p>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-8 py-3 bg-gray-50">
+        <div className="flex justify-end gap-3 px-8 py-4 bg-gray-50 border-t border-gray-100">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm cursor-pointer"
+            className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={handleSaveClick}
-            className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm cursor-pointer"
+            disabled={!isDirty}
+            className={`px-4 py-2 rounded-lg transition-colors text-sm cursor-pointer
+              ${isDirty 
+                ? 'bg-blue-500 hover:bg-blue-600 text-white' 
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
           >
-            Save
+            Save Changes
           </button>
         </div>
       </div>

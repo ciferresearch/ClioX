@@ -10,6 +10,7 @@ import {
   DEFAULT_CUSTOM_STOPWORDS,
   CUSTOM_COLORS
 } from './constants';
+import { Language } from './useStoplistManager';
 
 // Define the store type
 interface WordCloudStore {
@@ -44,7 +45,10 @@ interface WordCloudStore {
   originalStopwordsText: string;
   originalWhitelistText: string;
   
-  // Custom word lists
+  // Stoplist/Whitelist management
+  selectedLanguage: Language;
+  stoplistActive: boolean;
+  whitelistActive: boolean;
   customStopwords: string[];
   customWhitelist: string[];
   autoDetectedStopwords: string[];
@@ -81,6 +85,11 @@ interface WordCloudStore {
   closeWhitelistModal: () => void;
   saveWhitelist: () => void;
   
+  // Stoplist/Whitelist actions
+  setLanguage: (language: Language) => void;
+  toggleStoplist: () => void;
+  toggleWhitelist: () => void;
+  
   // Utility actions
   updateTempOptions: <K extends keyof WordCloudOptions>(key: K, value: WordCloudOptions[K]) => void;
   resetOptionsToDefaults: () => void;
@@ -91,6 +100,15 @@ interface WordCloudStore {
   getWordColor: (word: string) => string;
   fetchData: () => Promise<void>;
 }
+
+// Local storage keys
+const STORAGE_KEYS = {
+  LANGUAGE: 'wordcloud_language',
+  CUSTOM_STOPLIST: 'wordcloud_custom_stoplist',
+  STOPLIST_ACTIVE: 'wordcloud_stoplist_active',
+  WHITELIST: 'wordcloud_whitelist',
+  WHITELIST_ACTIVE: 'wordcloud_whitelist_active',
+};
 
 // Create the store
 export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
@@ -132,8 +150,12 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   originalStopwordsText: "",
   originalWhitelistText: "",
   
-  customStopwords: DEFAULT_CUSTOM_STOPWORDS,
-  customWhitelist: [],
+  // Initialize stoplist/whitelist from localStorage
+  selectedLanguage: (localStorage.getItem(STORAGE_KEYS.LANGUAGE) as Language) || 'english',
+  stoplistActive: localStorage.getItem(STORAGE_KEYS.STOPLIST_ACTIVE) !== 'false',
+  whitelistActive: localStorage.getItem(STORAGE_KEYS.WHITELIST_ACTIVE) === 'true',
+  customStopwords: JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_STOPLIST) || '[]'),
+  customWhitelist: JSON.parse(localStorage.getItem(STORAGE_KEYS.WHITELIST) || '[]'),
   autoDetectedStopwords: [],
   
   shouldUpdateLayout: false,
@@ -253,25 +275,23 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     }
   },
   openStopwordsModal: () => {
-    const { customStopwords, options, autoDetectedStopwords } = get();
+    const { customStopwords, selectedLanguage, autoDetectedStopwords } = get();
     
     // Prepare text content for the modal
     let currentText = "";
-    if (customStopwords.length === 0) {
-      // Show the relevant stopwords based on current option
-      if (options.stopwordsOption === "English") {
-        currentText = ENGLISH_STOPWORDS.join("\n");
-      } else if (options.stopwordsOption === "Auto-detect") {
-        currentText = autoDetectedStopwords.join("\n");
-      } else {
-        // Default example if no specific stopwords are selected
-        currentText = [
-          "a", "an", "the", "and", "or", "but", "if", "then",
-          "else", "when", "to", "at", "in", "on", "by"
-        ].join("\n");
-      }
-    } else {
+    
+    if (selectedLanguage === 'custom' && customStopwords.length > 0) {
       currentText = customStopwords.join("\n");
+    } else if (selectedLanguage === 'english') {
+      currentText = ENGLISH_STOPWORDS.join("\n");
+    } else if (selectedLanguage === 'auto-detect') {
+      currentText = autoDetectedStopwords.join("\n");
+    } else {
+      // Default example if no specific stopwords are selected
+      currentText = [
+        "a", "an", "the", "and", "or", "but", "if", "then",
+        "else", "when", "to", "at", "in", "on", "by"
+      ].join("\n");
     }
     
     set({
@@ -300,17 +320,20 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
         .map((word) => word.trim().toLowerCase())
         .filter((word) => word.length > 0);
       
-      // Update options to use custom mode
+      // Update custom stopwords and change language to custom
       set({
         customStopwords: newStopwords,
-        options: {
-          ...get().options,
-          stopwordsOption: "Custom"
-        },
+        selectedLanguage: 'custom',
+        stoplistActive: true,
         shouldUpdateLayout: true,
         isStopwordsModalOpen: false,
         modalsOpen: false
       });
+      
+      // Save to localStorage
+      localStorage.setItem(STORAGE_KEYS.CUSTOM_STOPLIST, JSON.stringify(newStopwords));
+      localStorage.setItem(STORAGE_KEYS.LANGUAGE, 'custom');
+      localStorage.setItem(STORAGE_KEYS.STOPLIST_ACTIVE, 'true');
       
       // Save current search term to reapply it
       const currentSearchTerm = searchTerm;
@@ -376,17 +399,18 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
         .map((word) => word.trim().toLowerCase())
         .filter((word) => word.length > 0);
       
-      // Update options to use custom mode
+      // Update whitelist settings
       set({
         customWhitelist: newWhitelist,
-        options: {
-          ...get().options,
-          whitelistOption: "Custom"
-        },
+        whitelistActive: true,
         shouldUpdateLayout: true,
         isWhitelistModalOpen: false,
         modalsOpen: false
       });
+      
+      // Save to localStorage
+      localStorage.setItem(STORAGE_KEYS.WHITELIST, JSON.stringify(newWhitelist));
+      localStorage.setItem(STORAGE_KEYS.WHITELIST_ACTIVE, 'true');
       
       // Save current search term to reapply it
       const currentSearchTerm = searchTerm;
@@ -415,6 +439,58 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     }
   },
   
+  // Language selection and toggles for stoplist/whitelist
+  setLanguage: (language) => {
+    set({
+      selectedLanguage: language,
+      shouldUpdateLayout: true,
+    });
+    
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEYS.LANGUAGE, language);
+    
+    // Update filters after language change
+    setTimeout(() => {
+      get().filterWords();
+    }, 0);
+  },
+  
+  toggleStoplist: () => {
+    const { stoplistActive } = get();
+    const newValue = !stoplistActive;
+    
+    set({
+      stoplistActive: newValue,
+      shouldUpdateLayout: true,
+    });
+    
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEYS.STOPLIST_ACTIVE, String(newValue));
+    
+    // Update filters after toggle
+    setTimeout(() => {
+      get().filterWords();
+    }, 0);
+  },
+  
+  toggleWhitelist: () => {
+    const { whitelistActive } = get();
+    const newValue = !whitelistActive;
+    
+    set({
+      whitelistActive: newValue,
+      shouldUpdateLayout: true,
+    });
+    
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEYS.WHITELIST_ACTIVE, String(newValue));
+    
+    // Update filters after toggle
+    setTimeout(() => {
+      get().filterWords();
+    }, 0);
+  },
+  
   // Utility actions
   updateTempOptions: (key, value) => {
     set({
@@ -440,32 +516,33 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   
   // Helper function to get active stopwords based on current option
   getActiveStopwords: (): string[] => {
-    const { options, autoDetectedStopwords, customStopwords } = get();
+    const { selectedLanguage, autoDetectedStopwords, customStopwords, stoplistActive } = get();
     
-    switch (options.stopwordsOption) {
-      case "Auto-detect":
+    // If stoplist is not active, return empty list
+    if (!stoplistActive) return [];
+    
+    switch (selectedLanguage) {
+      case "auto-detect":
         return autoDetectedStopwords;
-      case "English":
+      case "english":
         return ENGLISH_STOPWORDS;
-      case "Custom":
+      case "custom":
         return customStopwords;
-      case "None":
       default:
-        return [];
+        // For other languages (like spanish), this would come from an API
+        // but for now we'll just return the English list
+        return ENGLISH_STOPWORDS;
     }
   },
   
   // Helper function to get active whitelist based on current option
   getActiveWhitelist: (): string[] => {
-    const { options, customWhitelist } = get();
+    const { customWhitelist, whitelistActive } = get();
     
-    switch (options.whitelistOption) {
-      case "Custom":
-        return customWhitelist;
-      case "None":
-      default:
-        return [];
-    }
+    // If whitelist is not active, return empty list
+    if (!whitelistActive) return [];
+    
+    return customWhitelist;
   },
   
   // Filter words based on current search term, frequency, and options
@@ -490,19 +567,21 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       );
     }
     
-    // Apply stopwords filter
+    // Apply stopwords filter using Sets for better performance
     const stopwords = get().getActiveStopwords();
     if (stopwords.length > 0) {
+      const stopwordsSet = new Set(stopwords);
       filtered = filtered.filter(
-        (word) => !stopwords.includes(word.value.toLowerCase())
+        (word) => !stopwordsSet.has(word.value.toLowerCase())
       );
     }
     
-    // Apply whitelist filter
+    // Apply whitelist filter using Sets for better performance
     const whitelist = get().getActiveWhitelist();
     if (whitelist.length > 0) {
+      const whitelistSet = new Set(whitelist);
       filtered = filtered.filter((word) =>
-        whitelist.includes(word.value.toLowerCase())
+        whitelistSet.has(word.value.toLowerCase())
       );
     }
     
