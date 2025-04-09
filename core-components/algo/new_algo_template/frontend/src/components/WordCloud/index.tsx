@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWordCloudVisualization } from "./useWordCloudVisualization";
 import OptionsModal from "./modals/OptionsModal";
 import ListEditModal from "./modals/ListEditModal";
@@ -240,11 +240,22 @@ const WordCloud = () => {
     debouncedUpdate
   ]);
 
-  // Min/max count for sliders
-  const minCount =
-    words.length > 0 ? Math.min(...words.map((w: { count: number }) => w.count)) : 0;
-  const maxCount =
-    words.length > 0 ? Math.max(...words.map((w: { count: number }) => w.count)) : 100;
+  // Min/max count for sliders - initialize with defaults for SSR
+  const minCount = words.length > 0 
+    ? Math.min(...words.map((w: { count: number }) => w.count)) 
+    : 0;
+  
+  const maxCount = words.length > 0 
+    ? Math.max(...words.map((w: { count: number }) => w.count)) 
+    : 100;
+
+  // Initialize minFrequency based on data available at render time
+  useEffect(() => {
+    if (words.length > 0 && minFrequency === 0) {
+      // Only set if not already set and we have data
+      setMinFrequency(minCount);
+    }
+  }, [words.length, minCount, minFrequency, setMinFrequency]);
 
   // Handle panel close with smooth transition
   const handlePanelClose = () => {
@@ -283,11 +294,28 @@ const WordCloud = () => {
 
   // Handle filtering to a selected word
   const handleFilterToWord = (word: string) => {
-    // Set flag to force update layout on filter change
-    shouldUpdateLayoutRef.current = true;
-    setSearchTerm(word);
-    // Close the panel since we're now filtering to this word
+    // This is explicitly NOT a word selection action
+    // but rather a search action, so we need to:
+    // 1. Make sure isWordSelectionAction is reset
+    // 2. Force layout update since we're filtering to a specific word
+    
+    // Close the panel first
     handlePanelClose();
+    
+    // Short delay to ensure panel close is registered
+    setTimeout(() => {
+      // Now set search term with force update
+      shouldUpdateLayoutRef.current = true;
+      
+      // Reset word selection flag via store action
+      // This ensures the layout is fully recomputed
+      setShouldUpdateLayout(true);
+      
+      // Set the search term to filter to this word
+      setSearchTerm(word);
+      
+      console.log("Filtering to word:", word);
+    }, 50);
   };
 
   return (
@@ -324,38 +352,42 @@ const WordCloud = () => {
 
         <div className="flex flex-col">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Minimum frequency: {minFrequency}
+            Minimum frequency: {typeof window !== 'undefined' ? minFrequency : ''}
           </label>
           <div className="flex items-center h-10">
-            <input
-              type="range"
-              min={minCount}
-              max={maxCount}
-              value={minFrequency}
-              onChange={(e) => {
-                const newValue = Number(e.target.value);
-                setMinFrequency(newValue);
-              }}
-              className="w-full"
-            />
+            {typeof window !== 'undefined' && (
+              <input
+                type="range"
+                min={minCount}
+                max={maxCount}
+                value={minFrequency}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value);
+                  setMinFrequency(newValue);
+                }}
+                className="w-full"
+              />
+            )}
           </div>
         </div>
 
         <div className="flex flex-col">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Max words: {maxWords}
+            Max words: {typeof window !== 'undefined' ? maxWords : ''}
           </label>
           <div className="flex items-center h-10">
-            <input
-              type="range"
-              min={10}
-              max={300}
-              value={maxWords}
-              onChange={(e) => {
-                setMaxWords(Number(e.target.value));
-              }}
-              className="w-full"
-            />
+            {typeof window !== 'undefined' && (
+              <input
+                type="range"
+                min={10}
+                max={300}
+                value={maxWords}
+                onChange={(e) => {
+                  setMaxWords(Number(e.target.value));
+                }}
+                className="w-full"
+              />
+            )}
           </div>
         </div>
       </div>
@@ -434,29 +466,35 @@ const WordCloud = () => {
       <div className="mt-4 p-3 bg-gray-50 rounded text-sm text-gray-600">
         <div className="flex flex-wrap gap-2 justify-between items-center">
           <div>
-            Showing {filteredWords.length} of {words.length} words.
-            {filteredWords.length > 0 && (
-              <span>
-                {" "}
-                Frequency range: {Math.min(
-                  ...filteredWords.map((w: { count: number }) => w.count)
-                )} to {Math.max(...filteredWords.map((w: { count: number }) => w.count))}
-              </span>
+            {typeof window !== 'undefined' ? (
+              <>
+                Showing {filteredWords.length} of {words.length} words.
+                {filteredWords.length > 0 && (
+                  <span>
+                    {" "}
+                    Frequency range: {Math.min(
+                      ...filteredWords.map((w: { count: number }) => w.count)
+                    )} to {Math.max(...filteredWords.map((w: { count: number }) => w.count))}
+                  </span>
+                )}
+              </>
+            ) : (
+              <>Loading word statistics...</>
             )}
           </div>
           
           <div className="flex items-center gap-4 text-xs">
-            {stoplistActive && (
+            {stoplistActive ? (
               <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full">
                 {selectedLanguage === 'custom' ? 'Custom Stopwords' : `${selectedLanguage} Stopwords`}
               </span>
-            )}
+            ) : null}
             
-            {whitelistActive && (
+            {whitelistActive ? (
               <span className="px-2 py-1 bg-green-50 text-green-700 rounded-full">
                 Whitelist Active
               </span>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

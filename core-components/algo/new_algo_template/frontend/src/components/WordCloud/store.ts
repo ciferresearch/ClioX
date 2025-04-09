@@ -183,10 +183,11 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   setFilteredWords: (filteredWords) => set({ filteredWords }),
   setSearchTerm: (searchTerm) => {
     // Set flag to force update layout on search term change
+    // and ALWAYS reset word selection action flag
     set({ 
       searchTerm,
       shouldUpdateLayout: true,
-      isWordSelectionAction: false // Not a word selection action
+      isWordSelectionAction: false // Always reset for search changes
     });
     
     // After setting search term, filter words
@@ -318,12 +319,20 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     });
   },
   saveStopwords: () => {
-    const { stopwordsEditText, originalStopwordsText, searchTerm } = get();
+    const { stopwordsEditText, originalStopwordsText, searchTerm, selectedWord } = get();
     
     // Only process if changes were made
     const changesWereMade = stopwordsEditText !== originalStopwordsText;
     
     if (changesWereMade) {
+      // Close the panel first if it's open
+      if (selectedWord) {
+        set({
+          selectedWord: null,
+          isPanelVisible: false
+        });
+      }
+      
       // Parse the new stopwords from text
       const newStopwords = stopwordsEditText
         .split("\n")
@@ -337,7 +346,8 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
         stoplistActive: true,
         shouldUpdateLayout: true,
         isStopwordsModalOpen: false,
-        modalsOpen: false
+        modalsOpen: false,
+        isWordSelectionAction: false // Ensure this is not treated as a word selection
       });
       
       // Save to localStorage
@@ -362,7 +372,7 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
         } else {
           get().filterWords();
         }
-      }, 50);
+      }, 100); // Increased delay to ensure panel closes first
     } else {
       // Just close the modal without changes
       set({ 
@@ -397,12 +407,20 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     });
   },
   saveWhitelist: () => {
-    const { whitelistEditText, originalWhitelistText, searchTerm } = get();
+    const { whitelistEditText, originalWhitelistText, searchTerm, selectedWord } = get();
     
     // Only process if changes were made
     const changesWereMade = whitelistEditText !== originalWhitelistText;
     
     if (changesWereMade) {
+      // Close the panel first if it's open
+      if (selectedWord) {
+        set({
+          selectedWord: null,
+          isPanelVisible: false
+        });
+      }
+      
       // Parse the new whitelist from text
       const newWhitelist = whitelistEditText
         .split("\n")
@@ -415,7 +433,8 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
         whitelistActive: true,
         shouldUpdateLayout: true,
         isWhitelistModalOpen: false,
-        modalsOpen: false
+        modalsOpen: false,
+        isWordSelectionAction: false // Ensure this is not treated as a word selection
       });
       
       // Save to localStorage
@@ -439,7 +458,7 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
         } else {
           get().filterWords();
         }
-      }, 50);
+      }, 100); // Increased delay to ensure panel closes first
     } else {
       // Just close the modal without changes
       set({ 
@@ -451,9 +470,20 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   
   // Language selection and toggles for stoplist/whitelist
   setLanguage: (language) => {
+    // Close the panel first if it's open
+    const { selectedWord } = get();
+    if (selectedWord) {
+      set({
+        selectedWord: null,
+        isPanelVisible: false
+      });
+    }
+    
+    // Set new language with layout update flag
     set({
       selectedLanguage: language,
       shouldUpdateLayout: true,
+      isWordSelectionAction: false, // Ensure this is not treated as a word selection
     });
     
     // Save to localStorage
@@ -462,43 +492,81 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     // Update filters after language change
     setTimeout(() => {
       get().filterWords();
-    }, 0);
+    }, 50); // Increased delay to ensure panel closes first
   },
   
   toggleStoplist: () => {
-    const { stoplistActive } = get();
+    const { stoplistActive, selectedWord } = get();
+    
+    // Close the panel first if it's open
+    if (selectedWord) {
+      set({
+        selectedWord: null,
+        isPanelVisible: false
+      });
+    }
+    
     const newValue = !stoplistActive;
     
-    set({
-      stoplistActive: newValue,
-      shouldUpdateLayout: true,
-    });
-    
-    // Save to localStorage
-    localStorage.setItem(STORAGE_KEYS.STOPLIST_ACTIVE, String(newValue));
-    
-    // Update filters after toggle
+    // Short delay to ensure panel closes first
     setTimeout(() => {
-      get().filterWords();
-    }, 0);
+      set({
+        stoplistActive: newValue,
+        shouldUpdateLayout: true,
+        isWordSelectionAction: false, // Ensure this is not treated as a word selection
+      });
+      
+      // Save to localStorage
+      localStorage.setItem(STORAGE_KEYS.STOPLIST_ACTIVE, String(newValue));
+      
+      // Update filters after toggle
+      setTimeout(() => {
+        get().filterWords();
+      }, 50);
+    }, 50);
   },
   
   toggleWhitelist: () => {
-    const { whitelistActive } = get();
-    const newValue = !whitelistActive;
+    const { whitelistActive, customWhitelist, searchTerm, selectedWord } = get();
     
+    // Close the panel first if it's open
+    if (selectedWord) {
+      set({
+        selectedWord: null,
+        isPanelVisible: false
+      });
+    }
+    
+    const newWhitelistActive = !whitelistActive;
+    
+    // Toggle whitelist status
     set({
-      whitelistActive: newValue,
+      whitelistActive: newWhitelistActive,
       shouldUpdateLayout: true,
+      isWordSelectionAction: false // Ensure this is not treated as a word selection
     });
     
     // Save to localStorage
-    localStorage.setItem(STORAGE_KEYS.WHITELIST_ACTIVE, String(newValue));
+    localStorage.setItem(STORAGE_KEYS.WHITELIST_ACTIVE, newWhitelistActive ? 'true' : 'false');
     
-    // Update filters after toggle
+    // Save current search term to reapply it
+    const currentSearchTerm = searchTerm;
+    
+    // Force update after a brief delay
     setTimeout(() => {
-      get().filterWords();
-    }, 0);
+      // Temporarily clear search term to ensure whitelist filter is applied
+      if (currentSearchTerm) {
+        set({ searchTerm: '' });
+        
+        // Then reapply the search term after a brief delay
+        setTimeout(() => {
+          set({ searchTerm: currentSearchTerm });
+          get().filterWords();
+        }, 100);
+      } else {
+        get().filterWords();
+      }
+    }, 100); // Increased delay to ensure panel closes first
   },
   
   // Utility actions
