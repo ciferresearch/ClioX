@@ -25,10 +25,28 @@ os.makedirs('static/data', exist_ok=True)
 os.makedirs('static/data/temp', exist_ok=True)
 os.makedirs('outputs', exist_ok=True)
 
-@app.route('/api/analyze', methods=['POST'])
-def analyze_data():
+@app.route('/api/analyze', methods=['POST', 'GET'])
+def analyze_data(force_reprocess=False):
     """Process data and perform analysis"""
     try:
+        # Check if all data files already exist
+        if not force_reprocess:
+            files_exist = {
+                'cleaned_data': os.path.exists('outputs/enron_cleaned.csv'),
+                'sentiment_data': os.path.exists('static/data/sentiment_converted.json'),
+                'date_distribution': os.path.exists('static/data/date_distribution_data.csv'),
+                'email_distribution': os.path.exists('static/data/email_per_day_distribution_data.csv'),
+                'wordcloud': os.path.exists('static/data/temp/processed_wordcloud.json')
+            }
+
+            # If all files exist, we can skip processing
+            if all(files_exist.values()):
+                print("All data files already exist. Skipping processing.")
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Data already processed. Using existing files.'
+                })
+
         # Use the enron_subset.csv file in the backend/data directory
         file_path = 'data/enron_subset.csv'
 
@@ -97,9 +115,19 @@ def get_status():
         # Check if all files exist
         all_processed = all(files_exist.values())
 
+        # Check individual component status
+        component_status = {
+            'date_distribution': files_exist['date_distribution'],
+            'email_distribution': files_exist['email_distribution'],
+            'sentiment_chart': files_exist['sentiment_data'],
+            'wordcloud': files_exist['wordcloud'],
+            'document_summary': files_exist['cleaned_data']
+        }
+
         return jsonify({
             'status': 'ready' if all_processed else 'not_ready',
-            'files': files_exist
+            'files': files_exist,
+            'components': component_status
         })
     except Exception as e:
         return jsonify({
@@ -111,8 +139,11 @@ def get_status():
 def trigger_processing():
     """Trigger data processing"""
     try:
+        # Check if force reprocessing is requested
+        force_reprocess = request.args.get('force', 'false').lower() == 'true'
+
         # Call the analyze_data function
-        result = analyze_data()
+        result = analyze_data(force_reprocess=force_reprocess)
         return result
     except Exception as e:
         return jsonify({
@@ -126,8 +157,15 @@ def get_sentiment_data():
     try:
         # Check if sentiment data exists
         if not os.path.exists('static/data/sentiment_converted.json'):
-            # Try to process data first
-            analyze_data()
+            # Check if cleaned data exists
+            if os.path.exists('outputs/enron_cleaned.csv'):
+                # We have cleaned data but no sentiment data, just generate sentiment
+                df = pd.read_csv('outputs/enron_cleaned.csv')
+                sentiment_df = sentiment_classification(df)
+                generate_sentiment_json(sentiment_df)
+            else:
+                # Need to process everything
+                analyze_data()
 
         # Now try to read the file
         with open('static/data/sentiment_converted.json', 'r') as f:
@@ -149,13 +187,9 @@ def get_date_distribution_data():
                 csv_data = f.read()
             return csv_data, 200, {'Content-Type': 'text/csv'}
 
-        # If not, try to process the data first
-        if not os.path.exists('outputs/enron_cleaned.csv'):
-            # Process the data
-            analyze_data()
-
-        # Now try to generate it from the cleaned data
+        # If not, check if we have cleaned data
         if os.path.exists('outputs/enron_cleaned.csv'):
+            # We have cleaned data but no date distribution, just generate it
             df = pd.read_csv('outputs/enron_cleaned.csv')
             # Convert time column to datetime if it's not already
             if df['time'].dtype == 'object':
@@ -173,6 +207,15 @@ def get_date_distribution_data():
             with open('static/data/date_distribution_data.csv', 'r') as f:
                 csv_data = f.read()
             return csv_data, 200, {'Content-Type': 'text/csv'}
+        else:
+            # Need to process everything
+            analyze_data()
+
+            # Check if file was created
+            if os.path.exists('static/data/date_distribution_data.csv'):
+                with open('static/data/date_distribution_data.csv', 'r') as f:
+                    csv_data = f.read()
+                return csv_data, 200, {'Content-Type': 'text/csv'}
 
         return jsonify({
             'status': 'error',
@@ -194,13 +237,9 @@ def get_email_distribution_data():
                 csv_data = f.read()
             return csv_data, 200, {'Content-Type': 'text/csv'}
 
-        # If not, try to process the data first
-        if not os.path.exists('outputs/enron_cleaned.csv'):
-            # Process the data
-            analyze_data()
-
-        # Now try to generate it from the cleaned data
+        # If not, check if we have cleaned data
         if os.path.exists('outputs/enron_cleaned.csv'):
+            # We have cleaned data but no email distribution, just generate it
             df = pd.read_csv('outputs/enron_cleaned.csv')
             # Convert time column to datetime if it's not already
             if df['time'].dtype == 'object':
@@ -216,6 +255,15 @@ def get_email_distribution_data():
             with open('static/data/email_per_day_distribution_data.csv', 'r') as f:
                 csv_data = f.read()
             return csv_data, 200, {'Content-Type': 'text/csv'}
+        else:
+            # Need to process everything
+            analyze_data()
+
+            # Check if file was created
+            if os.path.exists('static/data/email_per_day_distribution_data.csv'):
+                with open('static/data/email_per_day_distribution_data.csv', 'r') as f:
+                    csv_data = f.read()
+                return csv_data, 200, {'Content-Type': 'text/csv'}
 
         return jsonify({
             'status': 'error',
@@ -237,13 +285,9 @@ def get_wordcloud_data():
                 data = json.load(f)
             return jsonify(data)
 
-        # If not, try to process the data first
-        if not os.path.exists('outputs/enron_cleaned.csv'):
-            # Process the data
-            analyze_data()
-
-        # Now try to generate it from the cleaned data
+        # If not, check if we have cleaned data
         if os.path.exists('outputs/enron_cleaned.csv'):
+            # We have cleaned data but no wordcloud, just generate it
             df = pd.read_csv('outputs/enron_cleaned.csv')
 
             # Combine all cleaned text
@@ -276,6 +320,15 @@ def get_wordcloud_data():
                 json.dump(output_data, f, indent=2)
 
             return jsonify(output_data)
+        else:
+            # Need to process everything
+            analyze_data()
+
+            # Check if file was created
+            if os.path.exists('static/data/temp/processed_wordcloud.json'):
+                with open('static/data/temp/processed_wordcloud.json', 'r') as f:
+                    data = json.load(f)
+                return jsonify(data)
 
         return jsonify({
             'status': 'error',

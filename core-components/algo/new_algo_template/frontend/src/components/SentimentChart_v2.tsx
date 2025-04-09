@@ -68,7 +68,11 @@ const debounce = <F extends (...args: any[]) => any>(func: F, wait: number) => {
   };
 };
 
-const SentimentChartV2 = () => {
+interface SentimentChartProps {
+  skipLoading?: boolean;
+}
+
+const SentimentChartV2 = ({ skipLoading = false }: SentimentChartProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const brushRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(0);
@@ -687,7 +691,7 @@ const SentimentChartV2 = () => {
     <div className="bg-white rounded-lg shadow-md p-4 w-full">
       <h2 className="text-xl font-semibold mb-2 text-gray-800 border-b pb-2">Sentiment Analysis by Category</h2>
 
-      {loading ? (
+      {loading && !skipLoading ? (
         <div className="flex items-center justify-center h-[400px]">
           <p className="text-gray-500">Loading sentiment data...</p>
         </div>

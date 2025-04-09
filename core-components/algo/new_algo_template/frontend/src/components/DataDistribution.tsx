@@ -1,13 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import ChartModal from './ChartModal';
+import ChartSkeleton from './ChartSkeleton';
+import ChartError from './ChartError';
 
 interface DataDistributionProps {
   title: string;
   description?: string;
   dataSource?: string;
+  skipLoading?: boolean; // Skip showing loading state if parent is already showing a skeleton
+  disableHover?: boolean; // Disable hover effects in the main view
 }
 
 interface DataPoint {
@@ -24,58 +28,66 @@ interface FormattedDatePoint {
 const DataDistribution = ({
   title,
   description,
-  dataSource
+  dataSource,
+  skipLoading = false,
+  disableHover = false
 }: DataDistributionProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [chartType, setChartType] = useState<'date' | 'email'>('date');
+  const [chartType, setChartType] = useState<'date' | 'email' | 'bar' | 'line'>('date');
 
-  // Determine which data file to use based on the title
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        let source = dataSource;
+  // Fetch data with retry functionality
+  const fetchDistributionData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        // If no explicit source is provided, infer from title
-        if (!source) {
-          if (title.toLowerCase().includes('date')) {
-            source = 'http://localhost:5001/api/distribution/date';
-          } else if (title.toLowerCase().includes('email counts')) {
-            source = 'http://localhost:5001/api/distribution/email';
-          }
-        }
+      let endpoint = '';
 
-        if (!source) {
-          throw new Error('No data source specified');
-        }
-
-        console.log('Fetching data from:', source);
-
-        const response = await fetch(source);
-        if (!response.ok) {
-          throw new Error(`Failed to load data: ${response.statusText}`);
-        }
-
-        const csvText = await response.text();
-
-        // Parse CSV data
-        const parsedData = d3.csvParse(csvText);
-        console.log('Parsed data:', parsedData);
-        setData(parsedData as unknown as DataPoint[]);
-      } catch (err) {
-        console.error('Error loading data:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
+      // Determine which API endpoint to use based on the title/type
+      if (title.toLowerCase().includes('date')) {
+        endpoint = 'http://localhost:5001/api/distribution/date';
+        setChartType('date');
+      } else if (title.toLowerCase().includes('email counts')) {
+        endpoint = 'http://localhost:5001/api/distribution/email';
+        setChartType('email');
       }
-    };
 
-    fetchData();
-  }, [title, dataSource]);
+      if (!endpoint) {
+        throw new Error('No data source specified');
+      }
+
+      console.log('Fetching data from:', endpoint);
+
+      const response = await fetch(endpoint);
+      if (response.status === 503) {
+        throw new Error('Data is being processed. Please try again in a moment.');
+      }
+      if (!response.ok) {
+        throw new Error(`Failed to load data: ${response.statusText}`);
+      }
+
+      const csvText = await response.text();
+
+      // Parse CSV data
+      const parsedData = d3.csvParse(csvText);
+      console.log('Parsed data:', parsedData);
+      setData(parsedData as unknown as DataPoint[]);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, [title]);
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchDistributionData();
+  }, [fetchDistributionData]);
 
   // Render chart when data is available
   useEffect(() => {
@@ -221,8 +233,8 @@ const DataDistribution = ({
         .style('box-shadow', '0 2px 5px rgba(0,0,0,0.2)')
         .style('transition', 'opacity 0.2s');
 
-      // Add points with hover effects
-      svg.selectAll('.dot')
+      // Add points with hover effects (if not disabled)
+      const dots = svg.selectAll('.dot')
         .data(formattedData)
         .enter()
         .append('circle')
@@ -233,36 +245,40 @@ const DataDistribution = ({
         .attr('fill', '#F59E0B') // Amber color for points
         .attr('stroke', '#ffffff')
         .attr('stroke-width', 1)
-        .attr('opacity', 0.8)
-        .on('mouseover', function(event, d) {
-          // Highlight point
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr('r', 5)
-            .attr('opacity', 1);
+        .attr('opacity', 0.8);
 
-          // Format date
-          const date = d.time!.toLocaleDateString();
+      // Only add hover effects if not disabled
+      if (!disableHover) {
+        dots.on('mouseover', function(event, d) {
+            // Highlight point
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('r', 5)
+              .attr('opacity', 1);
 
-          // Position tooltip near point
-          const [mouseX, mouseY] = d3.pointer(event, container);
-          tooltip.html(`Date: ${date}<br>Count: ${d.count}`)
-            .style('left', (mouseX + 10) + 'px')
-            .style('top', (mouseY - 25) + 'px')
-            .style('opacity', 1);
-        })
-        .on('mouseout', function() {
-          // Restore point
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr('r', 3)
-            .attr('opacity', 0.8);
+            // Format date
+            const date = d.time!.toLocaleDateString();
 
-          // Hide tooltip
-          tooltip.style('opacity', 0);
-        });
+            // Position tooltip near point
+            const [mouseX, mouseY] = d3.pointer(event, container);
+            tooltip.html(`Date: ${date}<br>Count: ${d.count}`)
+              .style('left', (mouseX + 10) + 'px')
+              .style('top', (mouseY - 25) + 'px')
+              .style('opacity', 1);
+          })
+          .on('mouseout', function() {
+            // Restore point
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('r', 3)
+              .attr('opacity', 0.8);
+
+            // Hide tooltip
+            tooltip.style('opacity', 0);
+          });
+      }
 
       // Add labels
       svg.append('text')
@@ -367,8 +383,8 @@ const DataDistribution = ({
         .attr('stop-color', '#4F46E5')
         .attr('stop-opacity', 0.6);
 
-      // Add bars with hover effects
-      svg.selectAll('rect')
+      // Add bars with hover effects (if not disabled)
+      const bars = svg.selectAll('rect')
         .data(histogram)
         .enter()
         .append('rect')
@@ -380,31 +396,35 @@ const DataDistribution = ({
         .attr('rx', 2) // Rounded corners
         .attr('opacity', 0.9)
         .attr('stroke', '#ffffff')
-        .attr('stroke-width', 0.5)
-        .on('mouseover', function(event, d) {
-          // Highlight bar
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr('opacity', 1);
+        .attr('stroke-width', 0.5);
 
-          // Position tooltip near bar
-          const [mouseX, mouseY] = d3.pointer(event, container);
-          tooltip.html(`Emails: ${d.x0} - ${d.x1}<br>Count: ${d.length}`)
-            .style('left', (mouseX + 10) + 'px')
-            .style('top', (mouseY - 25) + 'px')
-            .style('opacity', 1);
-        })
-        .on('mouseout', function() {
-          // Restore bar
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr('opacity', 0.9);
+      // Only add hover effects if not disabled
+      if (!disableHover) {
+        bars.on('mouseover', function(event, d) {
+            // Highlight bar
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('opacity', 1);
 
-          // Hide tooltip
-          tooltip.style('opacity', 0);
-        });
+            // Position tooltip near bar
+            const [mouseX, mouseY] = d3.pointer(event, container);
+            tooltip.html(`Emails: ${d.x0} - ${d.x1}<br>Count: ${d.length}`)
+              .style('left', (mouseX + 10) + 'px')
+              .style('top', (mouseY - 25) + 'px')
+              .style('opacity', 1);
+          })
+          .on('mouseout', function() {
+            // Restore bar
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('opacity', 0.9);
+
+            // Hide tooltip
+            tooltip.style('opacity', 0);
+          });
+      }
 
       // Add labels
       svg.append('text')
@@ -452,26 +472,35 @@ const DataDistribution = ({
         {data.length > 0 && !loading && !error && (
           <button
             onClick={handleOpenModal}
-            className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center"
+            className="inline-flex items-center justify-center p-1.5 rounded-md text-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer relative group"
+            aria-label="Expand chart"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
             </svg>
-            Zoom
+            <span className="absolute -bottom-8 right-0 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              Expand
+            </span>
           </button>
         )}
       </div>
       {description && <p className="text-gray-600 mb-4">{description}</p>}
+
       <div
         ref={chartRef}
         className="w-full h-64 bg-gray-50 rounded flex items-center justify-center cursor-pointer"
         onClick={data.length > 0 && !loading && !error ? handleOpenModal : undefined}
       >
-        {loading && <p className="text-gray-500">Loading chart data...</p>}
-        {error && <p className="text-red-500">Error: {error}</p>}
-        {!loading && !error && data.length === 0 &&
+        {loading && !skipLoading ? (
+          <ChartSkeleton type={chartType === 'date' ? 'line' : 'bar'} height={256} />
+        ) : error ? (
+          <ChartError
+            message={error}
+            onRetry={fetchDistributionData}
+          />
+        ) : data.length === 0 && !loading ? (
           <p className="text-gray-500">No data available</p>
-        }
+        ) : null}
       </div>
 
       {/* Modal for zoomed view */}

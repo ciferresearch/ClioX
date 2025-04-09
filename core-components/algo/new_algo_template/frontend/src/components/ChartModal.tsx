@@ -14,26 +14,72 @@ interface ChartModalProps {
 const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModalProps) => {
   const modalChartRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef<any>(null);
+  const marginRef = useRef<{ top: number; right: number; bottom: number; left: number }>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [showControls, setShowControls] = useState(true);
 
   useEffect(() => {
     if (!isOpen || !modalChartRef.current || !chartData || chartData.length === 0) return;
 
-    // Clear any existing chart
-    d3.select(modalChartRef.current).selectAll('*').remove();
-
     const container = modalChartRef.current;
-    const margin = { top: 40, right: 50, bottom: 70, left: 70 };
+    const margin = { top: 40, right: 60, bottom: 80, left: 70 };
     const width = container.clientWidth - margin.left - margin.right;
     const height = container.clientHeight - margin.top - margin.bottom;
 
-    const svg = d3.select(container)
+    // Clear any existing chart
+    d3.select(container).selectAll('*').remove();
+
+    // Create base SVG
+    const baseSvg = d3.select(container)
       .append('svg')
       .attr('width', container.clientWidth)
-      .attr('height', container.clientHeight)
+      .attr('height', container.clientHeight);
+
+    const chartGroup = baseSvg
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Set initial transform
+    const initialScale = 0.85; // Slightly zoomed out to show all labels
+    const initialX = margin.left;
+    const initialY = margin.top - 20; // Move up slightly to show bottom labels better
+
+    // Add zoom behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.5, 5])
+      .on('zoom', (event) => {
+        chartGroup.attr('transform',
+          `translate(${margin.left + event.transform.x},${margin.top + event.transform.y}) scale(${event.transform.k})`
+        );
+        setZoomLevel(event.transform.k);
+      });
+
+    // Store zoom behavior and margins in ref for external control
+    zoomRef.current = zoom;
+    marginRef.current = margin;
+
+    // Apply zoom behavior
+    baseSvg
+      .call(zoom)
+      .on('dblclick.zoom', null)
+      .style('cursor', 'grab')
+      .on('mousedown', function() {
+        d3.select(this).style('cursor', 'grabbing');
+      })
+      .on('mouseup', function() {
+        d3.select(this).style('cursor', 'grab');
+      });
+
+    // Apply initial transform
+    baseSvg.call(
+      zoom.transform,
+      d3.zoomIdentity
+        .translate(initialX, initialY)
+        .scale(initialScale)
+    );
+
+    // Update zoom level display
+    setZoomLevel(initialScale);
 
     if (chartType === 'date') {
       // Date distribution chart
@@ -71,25 +117,26 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .nice()
         .range([height, 0]);
 
-      // Add X axis
-      svg.append('g')
+      // Add X axis with more space for labels
+      const xAxis = chartGroup.append('g')
         .attr('transform', `translate(0,${height})`)
-        .call(d3.axisBottom(x))
-        .selectAll('text')
+        .call(d3.axisBottom(x).ticks(6).tickFormat(d3.timeFormat('%b %Y') as any));
+
+      xAxis.selectAll('text')
+        .attr('transform', 'rotate(-45)')
         .style('text-anchor', 'end')
         .attr('dx', '-.8em')
-        .attr('dy', '.15em')
-        .attr('transform', 'rotate(-45)');
+        .attr('dy', '1em');
 
       // Add Y axis
-      svg.append('g')
+      chartGroup.append('g')
         .call(d3.axisLeft(y));
 
       // Sort data by date for smoother line
       formattedData.sort((a: any, b: any) => a.time.getTime() - b.time.getTime());
 
       // Add area under the line with gradient
-      const areaGradient = svg.append('defs')
+      const areaGradient = chartGroup.append('defs')
         .append('linearGradient')
         .attr('id', 'area-gradient')
         .attr('x1', '0%').attr('y1', '0%')
@@ -114,7 +161,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .curve(d3.curveCatmullRom.alpha(0.5)); // Smoother curve
 
       // Add the area
-      svg.append('path')
+      chartGroup.append('path')
         .datum(formattedData)
         .attr('fill', 'url(#area-gradient)')
         .attr('d', area);
@@ -126,7 +173,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .y(d => y(d.count))
         .curve(d3.curveCatmullRom.alpha(0.5)); // Smoother curve
 
-      svg.append('path')
+      chartGroup.append('path')
         .datum(formattedData)
         .attr('fill', 'none')
         .attr('stroke', '#4F46E5') // Indigo color for line
@@ -134,7 +181,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .attr('d', line);
 
       // Add points with hover effect
-      const dots = svg.selectAll('.dot')
+      const dots = chartGroup.selectAll('.dot')
         .data(formattedData)
         .enter()
         .append('circle')
@@ -208,14 +255,14 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         });
 
       // Add labels
-      svg.append('text')
+      chartGroup.append('text')
         .attr('text-anchor', 'middle')
         .attr('x', width / 2)
         .attr('y', height + margin.bottom - 10)
         .text('Date')
         .attr('class', 'text-sm text-gray-600');
 
-      svg.append('text')
+      chartGroup.append('text')
         .attr('text-anchor', 'middle')
         .attr('transform', 'rotate(-90)')
         .attr('y', -margin.left + 20)
@@ -258,17 +305,20 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .nice()
         .range([height, 0]);
 
-      // Add X axis
-      svg.append('g')
+      // Add X axis with more space for labels
+      chartGroup.append('g')
         .attr('transform', `translate(0,${height})`)
-        .call(d3.axisBottom(x).ticks(Math.min(maxValue + 1, 10)).tickFormat(d3.format('d')));
+        .call(d3.axisBottom(x).ticks(Math.min(maxValue + 1, 15)).tickFormat(d3.format('d')))
+        .selectAll('text')
+        .style('text-anchor', 'middle')
+        .attr('dy', '1em');
 
       // Add Y axis
-      svg.append('g')
+      chartGroup.append('g')
         .call(d3.axisLeft(y).ticks(5));
 
       // Add gradient for bars
-      const barGradient = svg.append('defs')
+      const barGradient = chartGroup.append('defs')
         .append('linearGradient')
         .attr('id', 'bar-gradient')
         .attr('x1', '0%').attr('y1', '0%')
@@ -285,7 +335,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .attr('stop-opacity', 0.6);
 
       // Add bars with hover effect
-      const bars = svg.selectAll('rect')
+      const bars = chartGroup.selectAll('rect')
         .data(histogram)
         .enter()
         .append('rect')
@@ -357,14 +407,14 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         });
 
       // Add labels
-      svg.append('text')
+      chartGroup.append('text')
         .attr('text-anchor', 'middle')
         .attr('x', width / 2)
         .attr('y', height + margin.bottom - 10)
         .text('Emails per Day')
         .attr('class', 'text-sm text-gray-600');
 
-      svg.append('text')
+      chartGroup.append('text')
         .attr('text-anchor', 'middle')
         .attr('transform', 'rotate(-90)')
         .attr('y', -margin.left + 20)
@@ -373,28 +423,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
         .attr('class', 'text-sm text-gray-600');
     }
 
-    // Add zoom behavior
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 5]) // Allow zoom range: 0.5x to 5x
-      .on('zoom', (event) => {
-        svg.attr('transform', `translate(${margin.left + event.transform.x},${margin.top + event.transform.y}) scale(${event.transform.k})`);
-        setZoomLevel(event.transform.k);
-      });
-
-    // Store zoom behavior in ref for external control
-    zoomRef.current = zoom;
-
-    // Add zoom behavior to SVG
-    d3.select(container).select('svg')
-      .call(zoom as any)
-      .on('dblclick.zoom', null) // Disable double-click zoom
-      .style('cursor', 'grab')
-      .on('mousedown', function() {
-        d3.select(this).style('cursor', 'grabbing');
-      })
-      .on('mouseup', function() {
-        d3.select(this).style('cursor', 'grab');
-      });
+    // Zoom behavior is already set up in the initial SVG creation
 
 
 
@@ -424,8 +453,17 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
   const handleResetZoom = () => {
     if (zoomRef.current && modalChartRef.current) {
       const svg = d3.select(modalChartRef.current).select('svg');
+
+      // Apply initial transform
+      const initialScale = 0.85;
+      const initialX = marginRef.current?.left || 0;
+      const initialY = (marginRef.current?.top || 0) - 20;
+
       svg.transition().duration(300).call(
-        zoomRef.current.transform, d3.zoomIdentity
+        zoomRef.current.transform,
+        d3.zoomIdentity
+          .translate(initialX, initialY)
+          .scale(initialScale)
       );
     }
   };
