@@ -18,11 +18,18 @@ interface DataPoint {
   time?: string | Date;
   count?: number;
   emails_per_day?: number;
+  [key: string]: any; // Allow for dynamic keys
 }
 
 interface FormattedDatePoint {
   time: Date | null;
   count: number;
+}
+
+interface HistogramBin {
+  x0: number;
+  x1: number;
+  length: number;
 }
 
 const DataDistribution = ({
@@ -37,30 +44,28 @@ const DataDistribution = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [chartType, setChartType] = useState<'date' | 'email' | 'bar' | 'line'>('date');
+  const [chartType, setChartType] = useState<'date' | 'email'>('date');
 
-  // Fetch data with retry functionality
+  // Determine API endpoint based on chart type
+  const getEndpoint = useCallback((): string => {
+    if (title.toLowerCase().includes('date')) {
+      return 'http://localhost:5001/api/distribution/date';
+    } else if (title.toLowerCase().includes('email counts')) {
+      return 'http://localhost:5001/api/distribution/email';
+    }
+    return '';
+  }, [title]);
+
+  // Fetch data with error handling
   const fetchDistributionData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      let endpoint = '';
-
-      // Determine which API endpoint to use based on the title/type
-      if (title.toLowerCase().includes('date')) {
-        endpoint = 'http://localhost:5001/api/distribution/date';
-        setChartType('date');
-      } else if (title.toLowerCase().includes('email counts')) {
-        endpoint = 'http://localhost:5001/api/distribution/email';
-        setChartType('email');
-      }
-
+      const endpoint = getEndpoint();
       if (!endpoint) {
         throw new Error('No data source specified');
       }
-
-      console.log('Fetching data from:', endpoint);
 
       const response = await fetch(endpoint);
       if (response.status === 503) {
@@ -71,18 +76,18 @@ const DataDistribution = ({
       }
 
       const csvText = await response.text();
-
-      // Parse CSV data
       const parsedData = d3.csvParse(csvText);
-      console.log('Parsed data:', parsedData);
       setData(parsedData as unknown as DataPoint[]);
+
+      // Set chart type based on endpoint
+      setChartType(endpoint.includes('date') ? 'date' : 'email');
     } catch (err) {
       console.error('Error loading data:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
-  }, [title]);
+  }, [getEndpoint]);
 
   // Fetch data on component mount
   useEffect(() => {
