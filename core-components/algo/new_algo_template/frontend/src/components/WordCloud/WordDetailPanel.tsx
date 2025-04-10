@@ -16,6 +16,7 @@ const WordDetailPanel: React.FC<WordDetailPanelProps> = ({
   maxCount,
   allWords,
 }) => {
+  // Check if no word is selected
   if (!selectedWord) return null;
 
   return (

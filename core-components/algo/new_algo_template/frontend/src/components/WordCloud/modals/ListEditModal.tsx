@@ -19,28 +19,10 @@ const ListEditModal: React.FC<ListEditModalProps> = ({
   onSave,
   language = 'english'
 }) => {
-  if (!isOpen) return null;
-
+  // Always declare all hooks at the top, regardless of conditions
   const isStoplist = title.includes("Stopwords") || title.includes("Stoplist");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isDirty, setIsDirty] = useState(false);
-
-  // Prevent event propagation to parent elements
-  const handleContentClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-
-  // Update onChange handler to sync textarea content with state
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onChange(e.target.value);
-    if (!isDirty) setIsDirty(true);
-  };
-
-  // Handle save - directly use the value from state
-  const handleSaveClick = () => {
-    onSave();
-    setIsDirty(false);
-  };
 
   // Reset dirty state when modal opens/closes
   useEffect(() => {
@@ -61,6 +43,23 @@ const ListEditModal: React.FC<ListEditModalProps> = ({
     }
   }, [isOpen]);
 
+  // Prevent event propagation to parent elements
+  const handleContentClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  // Update onChange handler to sync textarea content with state
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChange(e.target.value);
+    if (!isDirty) setIsDirty(true);
+  };
+
+  // Handle save - directly use the value from state
+  const handleSaveClick = () => {
+    onSave();
+    setIsDirty(false);
+  };
+
   // Count words from value
   const wordCount = value
     .split("\n")
@@ -70,6 +69,11 @@ const ListEditModal: React.FC<ListEditModalProps> = ({
   const lines = value.split("\n").map(line => line.trim().toLowerCase()).filter(Boolean);
   const uniqueLines = new Set(lines);
   const hasDuplicates = lines.length !== uniqueLines.size;
+
+  // Return null instead of early return
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div
