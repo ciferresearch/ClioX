@@ -1,41 +1,34 @@
-# backend 
+# ClioX Installation Guide
 
-### use conda to manage the backend dependencies
+## Backend Setup
 
-* build the dependencies file 
-[conda env export > environment.yml]
+1. Create the conda environment with all dependencies:
+```
+conda env create -f environment.yml
+```
 
-* creat environment and download all the dependencies
-[conda env create -f environment.yml]
+2. Activate the environment:
+```
+conda activate clioX
+```
 
-* update existing environment 
-[conda env update -f environment.yml]
+3. Run the backend:
+```
+python app.py
+```
 
-* activate environment
-[conda activate {name}]
+## Frontend Setup
 
+1. Install dependencies:
+```
+npm install --legacy-peer-deps
+```
 
-# frontend 
+2. Start the development server:
+```
+npm run dev
+```
 
-### use npm for javascript dependencies management under Node.js runtime, but you can change to yarn if you are facing slow dependencies download problem 
-
-
-* init a new npm project
-[npm init]
-[npm init -y]
-
-* install all dependencies
-[npm install]
-
-* install new dependencies
-[npm install {package} --save]
-
-
-### backend is build and test using flask framework
-
-* run project 
-[python main.py]
-
-* architecture
-    * templates: for all html files
-    * static: for all css, js files, and data/images, sub folder is permitted
+## Project Architecture
+- **templates**: HTML files
+- **static**: CSS, JS files, and data/images (subfolders permitted)
