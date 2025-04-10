@@ -88,4 +88,4 @@ const ChartSkeleton = ({ type = 'line', height = 400 }: ChartSkeletonProps) => {
   );
 };
 
-export default ChartSkeleton; 
+export default ChartSkeleton;
