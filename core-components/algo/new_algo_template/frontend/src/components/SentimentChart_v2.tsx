@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
+import { useDataStore } from '@/store/dataStore';
 
 interface SentimentData {
   name: string;
@@ -82,6 +83,9 @@ const SentimentChartV2 = ({ skipLoading = false }: SentimentChartProps) => {
   const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, null, undefined> | null>(null);
   const verticalLineRef = useRef<d3.Selection<SVGLineElement, unknown, null, undefined> | null>(null);
 
+  // Get data fetching function from store
+  const { fetchSentimentData } = useDataStore();
+
   // Memoize parseTime function to avoid recreating it
   const parseTime = useCallback(d3.timeParse('%Y-%m-%dT%H:%M:%SZ'), []);
   const formatDate = useCallback(d3.timeFormat('%b %d, %Y'), []);
@@ -91,14 +95,14 @@ const SentimentChartV2 = ({ skipLoading = false }: SentimentChartProps) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5001/api/data/sentiment');
-        const data: SentimentData[] = await response.json();
+        // Use the data store function instead of direct fetch
+        const data: SentimentData[] = await fetchSentimentData();
 
         // Sort data by sentiment value from -2 to +2 (ascending order)
         data.sort((a, b) => {
-          const aNum = parseInt(a.name);
-          const bNum = parseInt(b.name);
-          return aNum - bNum; // Changed to ascending order (from -2 to +2)
+          const aNum = parseInt(a.name.replace('+', ''));
+          const bNum = parseInt(b.name.replace('+', ''));
+          return aNum - bNum;
         });
 
         setSentimentData(data);
@@ -121,7 +125,7 @@ const SentimentChartV2 = ({ skipLoading = false }: SentimentChartProps) => {
     };
 
     fetchData();
-  }, [parseTime]);
+  }, [parseTime, fetchSentimentData]);
 
   // Handle resize with debouncing
   useEffect(() => {

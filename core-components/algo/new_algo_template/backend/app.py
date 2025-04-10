@@ -485,9 +485,11 @@ def generate_sentiment_json(sentiment_df):
     for col in grouped.columns[1:-2]:  # Exclude 'total' and 'mean'
         try:
             col_value = int(col)
-            adjusted_value = col_value - 2
+            # Map 1-5 column names to -2 to +2 sentiment scale
+            adjusted_value = col_value - 3
             name = f"+{adjusted_value}" if adjusted_value > 0 else str(adjusted_value)
         except ValueError:
+            print(f"Error converting column {col} to sentiment scale")
             name = col  # Keep original name if conversion fails
 
         output.append({

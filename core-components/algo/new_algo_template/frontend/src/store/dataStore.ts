@@ -8,7 +8,7 @@ const API_CONFIG = {
     process: '/api/process',
     emailDistribution: '/api/distribution/email',
     dateDistribution: '/api/distribution/date',
-    sentiment: '/api/sentiment',
+    sentiment: '/api/data/sentiment',
     wordcloud: '/api/wordcloud',
     documentSummary: '/api/document/summary'
   }
