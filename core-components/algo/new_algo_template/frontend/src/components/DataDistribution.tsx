@@ -3,13 +3,15 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import ChartModal from './ChartModal';
-import ChartSkeleton from './ChartSkeleton';
+import SkeletonLoader from './SkeletonLoader';
 import ChartError from './ChartError';
 
 interface DataDistributionProps {
   title: string;
   description?: string;
   dataSource?: string;
+  skipLoading?: boolean; // Skip showing loading state if parent is already showing a skeleton
+  disableHover?: boolean; // Disable hover effects in the main view
 }
 
 interface DataPoint {
@@ -26,7 +28,9 @@ interface FormattedDatePoint {
 const DataDistribution = ({
   title,
   description,
-  dataSource
+  dataSource,
+  skipLoading = false,
+  disableHover = false
 }: DataDistributionProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState<DataPoint[]>([]);
@@ -40,7 +44,7 @@ const DataDistribution = ({
     try {
       setLoading(true);
       setError(null);
-      
+
       let endpoint = '';
 
       // Determine which API endpoint to use based on the title/type
@@ -385,17 +389,17 @@ const DataDistribution = ({
         )}
       </div>
       {description && <p className="text-gray-600 mb-4">{description}</p>}
-      
+
       <div
         ref={chartRef}
         className="w-full h-64 bg-gray-50 rounded flex items-center justify-center cursor-pointer"
         onClick={data.length > 0 && !loading && !error ? handleOpenModal : undefined}
       >
-        {loading ? (
-          <ChartSkeleton type={chartType === 'date' ? 'line' : 'bar'} height={256} />
+        {loading && !skipLoading ? (
+          <SkeletonLoader type={chartType === 'date' ? 'line' : 'bar'} height="h-64" />
         ) : error ? (
-          <ChartError 
-            message={error} 
+          <ChartError
+            message={error}
             onRetry={fetchDistributionData}
           />
         ) : data.length === 0 ? (
