@@ -9,7 +9,11 @@ import ChartError from "../ChartError";
 import debounce from "lodash/debounce";
 import { useWordCloudStore } from "./store";
 
-const WordCloud = () => {
+interface WordCloudProps {
+  skipLoading?: boolean;
+}
+
+const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
   // Get SVG ref for d3 visualization
   const svgRef = useRef<SVGSVGElement>(null);
   
@@ -187,8 +191,11 @@ const WordCloud = () => {
 
   // Fetch data on initial load
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    // If skipLoading is true, do not execute fetchData
+    if (!skipLoading) {
+      fetchData();
+    }
+  }, [fetchData, skipLoading]);
 
   // Force initial render after data is loaded
   useEffect(() => {

@@ -177,7 +177,7 @@ export default function Home() {
 
         <div className="mb-6">
           {dataStatus.wordCloud ? (
-            <WordCloud skipLoading={true} />
+            <WordCloud />
           ) : (
             <SkeletonLoader type="wordcloud" height="h-96" />
           )}

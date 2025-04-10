@@ -1,0 +1,404 @@
+{
+  "wordCloudData": [
+    {
+      "value": "ect",
+      "count": 1387
+    },
+    {
+      "value": "enron",
+      "count": 716
+    },
+    {
+      "value": "would",
+      "count": 466
+    },
+    {
+      "value": "subject",
+      "count": 436
+    },
+    {
+      "value": "cc",
+      "count": 419
+    },
+    {
+      "value": "forwarded",
+      "count": 419
+    },
+    {
+      "value": "please",
+      "count": 406
+    },
+    {
+      "value": "gas",
+      "count": 396
+    },
+    {
+      "value": "power",
+      "count": 280
+    },
+    {
+      "value": "need",
+      "count": 262
+    },
+    {
+      "value": "get",
+      "count": 234
+    },
+    {
+      "value": "ees",
+      "count": 228
+    },
+    {
+      "value": "call",
+      "count": 217
+    },
+    {
+      "value": "new",
+      "count": 211
+    },
+    {
+      "value": "project",
+      "count": 203
+    },
+    {
+      "value": "meeting",
+      "count": 200
+    },
+    {
+      "value": "enronxgate",
+      "count": 197
+    },
+    {
+      "value": "loan",
+      "count": 190
+    },
+    {
+      "value": "time",
+      "count": 187
+    },
+    {
+      "value": "know",
+      "count": 181
+    },
+    {
+      "value": "also",
+      "count": 179
+    },
+    {
+      "value": "market",
+      "count": 178
+    },
+    {
+      "value": "like",
+      "count": 175
+    },
+    {
+      "value": "image",
+      "count": 175
+    },
+    {
+      "value": "price",
+      "count": 169
+    },
+    {
+      "value": "email",
+      "count": 165
+    },
+    {
+      "value": "cost",
+      "count": 158
+    },
+    {
+      "value": "prices",
+      "count": 145
+    },
+    {
+      "value": "work",
+      "count": 144
+    },
+    {
+      "value": "list",
+      "count": 143
+    },
+    {
+      "value": "use",
+      "count": 141
+    },
+    {
+      "value": "let",
+      "count": 137
+    },
+    {
+      "value": "one",
+      "count": 136
+    },
+    {
+      "value": "plan",
+      "count": 133
+    },
+    {
+      "value": "said",
+      "count": 132
+    },
+    {
+      "value": "information",
+      "count": 130
+    },
+    {
+      "value": "construction",
+      "count": 128
+    },
+    {
+      "value": "land",
+      "count": 127
+    },
+    {
+      "value": "want",
+      "count": 127
+    },
+    {
+      "value": "costs",
+      "count": 122
+    },
+    {
+      "value": "sent",
+      "count": 121
+    },
+    {
+      "value": "questions",
+      "count": 120
+    },
+    {
+      "value": "see",
+      "count": 120
+    },
+    {
+      "value": "position",
+      "count": 119
+    },
+    {
+      "value": "thanks",
+      "count": 117
+    },
+    {
+      "value": "think",
+      "count": 113
+    },
+    {
+      "value": "attached",
+      "count": 109
+    },
+    {
+      "value": "lot",
+      "count": 108
+    },
+    {
+      "value": "may",
+      "count": 108
+    },
+    {
+      "value": "thank",
+      "count": 104
+    },
+    {
+      "value": "access",
+      "count": 104
+    },
+    {
+      "value": "energy",
+      "count": 103
+    },
+    {
+      "value": "units",
+      "count": 101
+    },
+    {
+      "value": "deal",
+      "count": 100
+    },
+    {
+      "value": "loans",
+      "count": 99
+    },
+    {
+      "value": "could",
+      "count": 99
+    },
+    {
+      "value": "go",
+      "count": 98
+    },
+    {
+      "value": "back",
+      "count": 98
+    },
+    {
+      "value": "make",
+      "count": 96
+    },
+    {
+      "value": "manager",
+      "count": 96
+    },
+    {
+      "value": "good",
+      "count": 96
+    },
+    {
+      "value": "west",
+      "count": 96
+    },
+    {
+      "value": "still",
+      "count": 95
+    },
+    {
+      "value": "per",
+      "count": 94
+    },
+    {
+      "value": "site",
+      "count": 93
+    },
+    {
+      "value": "trading",
+      "count": 93
+    },
+    {
+      "value": "desk",
+      "count": 93
+    },
+    {
+      "value": "request",
+      "count": 92
+    },
+    {
+      "value": "going",
+      "count": 92
+    },
+    {
+      "value": "cash",
+      "count": 92
+    },
+    {
+      "value": "date",
+      "count": 91
+    },
+    {
+      "value": "send",
+      "count": 89
+    },
+    {
+      "value": "help",
+      "count": 89
+    },
+    {
+      "value": "following",
+      "count": 88
+    },
+    {
+      "value": "yes",
+      "count": 87
+    },
+    {
+      "value": "basis",
+      "count": 87
+    },
+    {
+      "value": "forward",
+      "count": 86
+    },
+    {
+      "value": "free",
+      "count": 86
+    },
+    {
+      "value": "click",
+      "count": 85
+    },
+    {
+      "value": "total",
+      "count": 85
+    },
+    {
+      "value": "take",
+      "count": 81
+    },
+    {
+      "value": "traders",
+      "count": 81
+    },
+    {
+      "value": "data",
+      "count": 80
+    },
+    {
+      "value": "utilities",
+      "count": 80
+    },
+    {
+      "value": "office",
+      "count": 79
+    },
+    {
+      "value": "us",
+      "count": 78
+    },
+    {
+      "value": "file",
+      "count": 78
+    },
+    {
+      "value": "physical",
+      "count": 77
+    },
+    {
+      "value": "name",
+      "count": 77
+    },
+    {
+      "value": "much",
+      "count": 76
+    },
+    {
+      "value": "value",
+      "count": 75
+    },
+    {
+      "value": "since",
+      "count": 75
+    },
+    {
+      "value": "property",
+      "count": 73
+    },
+    {
+      "value": "find",
+      "count": 73
+    },
+    {
+      "value": "demand",
+      "count": 73
+    },
+    {
+      "value": "first",
+      "count": 72
+    },
+    {
+      "value": "index",
+      "count": 72
+    },
+    {
+      "value": "regarding",
+      "count": 71
+    },
+    {
+      "value": "trades",
+      "count": 71
+    },
+    {
+      "value": "try",
+      "count": 70
+    }
+  ]
+}

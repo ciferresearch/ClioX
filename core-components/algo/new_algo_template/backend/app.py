@@ -344,6 +344,54 @@ def get_wordcloud_data():
             'message': str(e)
         }), 500
 
+@app.route('/api/document/summary', methods=['GET'])
+def get_document_summary():
+    """Get document summary"""
+    try:
+        # Check if we have cleaned data
+        if not os.path.exists('outputs/enron_cleaned.csv'):
+            return jsonify({
+                'status': 'error',
+                'message': 'No data available. Please run analysis first.'
+            }), 404
+
+        # Read the cleaned data
+        df = pd.read_csv('outputs/enron_cleaned.csv')
+        
+        # Calculate statistics
+        total_documents = len(df)
+        total_words = df['clean_text'].str.split().str.len().sum()
+        all_words = ' '.join(df['clean_text'].dropna()).split()
+        unique_words = len(set(all_words))
+        vocabulary_density = unique_words / total_words if total_words > 0 else 0
+        
+        # Calculate readability (simple implementation)
+        total_sentences = df['clean_text'].str.count('[.!?]+').sum()
+        words_per_sentence = total_words / total_sentences if total_sentences > 0 else 0
+        avg_word_length = sum(len(word) for word in all_words) / len(all_words) if all_words else 0
+        readability_index = 0.4 * (words_per_sentence + 100 * (len([w for w in all_words if len(w) > 6]) / total_words))
+        
+        # Get frequent words
+        word_counts = Counter(all_words).most_common(5)
+        frequent_words = [{"word": word, "count": count} for word, count in word_counts]
+        
+        stats = {
+            "totalDocuments": total_documents,
+            "totalWords": total_words,
+            "uniqueWords": unique_words,
+            "vocabularyDensity": vocabulary_density,
+            "readabilityIndex": readability_index,
+            "wordsPerSentence": words_per_sentence,
+            "frequentWords": frequent_words,
+            "created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 def initialize_nlp_engines():
     """Initialize NLP engine and PII detection"""
@@ -421,8 +469,6 @@ def generate_sentiment_json(sentiment_df):
     grouped['total'] = grouped['1'] + grouped['2'] + grouped['3'] + grouped['4'] + grouped['5']
     grouped['mean'] = (grouped['1']*1 + grouped['2']*2 + grouped['3']*3 + grouped['4']*4 + grouped['5']*5) / grouped['total']
 
-
-
     # Convert to required JSON format
     output = []
     for col in grouped.columns[1:-2]:  # Exclude 'total' and 'mean'
@@ -478,8 +524,6 @@ def generate_wordcloud_data(df):
         print(f"Successfully generated word cloud data. Found {len(most_common)} words with frequency >= {min_count}")
     except Exception as e:
         print(f"Error generating word cloud data: {str(e)}")
-
-
 
 if __name__ == "__main__":
     app.run(port=5001, debug=False)
