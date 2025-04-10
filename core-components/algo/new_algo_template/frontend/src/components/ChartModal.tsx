@@ -16,7 +16,6 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
   const zoomRef = useRef<any>(null);
   const marginRef = useRef<{ top: number; right: number; bottom: number; left: number }>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [showControls, setShowControls] = useState(true);
 
   useEffect(() => {
     if (!isOpen || !modalChartRef.current || !chartData || chartData.length === 0) return;
@@ -48,7 +47,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.5, 5])
       .on('zoom', (event) => {
-        chartGroup.attr('transform', 
+        chartGroup.attr('transform',
           `translate(${margin.left + event.transform.x},${margin.top + event.transform.y}) scale(${event.transform.k})`
         );
         setZoomLevel(event.transform.k);
@@ -376,7 +375,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
 
           // Calculate tooltip position
           const [mouseX, mouseY] = d3.pointer(event, container);
-          
+
           // Show tooltip with data
           tooltip.html(`Emails: ${d.x0} - ${d.x1}<br>Count: ${d.length}`)
             .style('left', (mouseX + 10) + 'px')
@@ -438,7 +437,7 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
     if (zoomRef.current && modalChartRef.current && marginRef.current) {
       const baseSvg = d3.select(modalChartRef.current).select('svg');
       const margin = marginRef.current;
-      
+
       // Reset to initial transform
       baseSvg.transition().duration(300).call(
         zoomRef.current.transform,
@@ -449,9 +448,18 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
     }
   };
 
-  // Toggle controls visibility
-  const toggleControls = () => {
-    setShowControls(!showControls);
+  // Toggle tips visibility
+  const toggleTips = () => {
+    const tipElement = document.getElementById('chart-tip');
+    if (tipElement) {
+      tipElement.classList.toggle('hidden');
+
+      // Update button text
+      const tipButton = document.querySelector('[data-tip-button]');
+      if (tipButton) {
+        tipButton.textContent = tipElement.classList.contains('hidden') ? 'Show Tips' : 'Hide Tips';
+      }
+    }
   };
 
   if (!isOpen) return null;
@@ -471,9 +479,12 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
               </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 text-xl transition-colors cursor-pointer"
+                className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex items-center justify-center"
+                title="Close"
               >
-                ×
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
               </button>
             </div>
 
@@ -518,23 +529,45 @@ const ChartModal = ({ isOpen, onClose, title, chartData, chartType }: ChartModal
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="px-8 py-3 flex justify-between items-center bg-gray-50">
-              <div className="text-xs text-gray-500">
-                Drag to pan, scroll to zoom, or use the controls
+            {/* Footer with Tips */}
+            <div className="px-8 py-3 bg-gray-50 flex justify-between items-center">
+              <div className="text-sm font-medium text-gray-700 flex items-center relative">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Chart Navigation
+
+                {/* Popup Tips */}
+                <div id="chart-tip" className="hidden absolute bottom-8 left-0 text-xs text-gray-700 bg-white p-4 rounded-lg shadow-lg border border-gray-200 w-64 z-50">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="font-medium text-gray-800">Chart Navigation Tips</div>
+                    <button
+                      onClick={toggleTips}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Drag to pan around the chart</li>
+                    <li>Use mouse wheel to zoom in and out</li>
+                    <li>Use the + and - buttons for precise zoom control</li>
+                    <li>Click the home button to reset the view</li>
+                    <li>Hover over data points for detailed information</li>
+                  </ul>
+                  <div className="absolute -bottom-2 left-4 w-4 h-4 bg-white transform rotate-45 border-r border-b border-gray-200"></div>
+                </div>
               </div>
-              <div className="flex gap-3">
+
+              <div>
                 <button
-                  onClick={onClose}
+                  onClick={toggleTips}
+                  data-tip-button
                   className="px-4 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm cursor-pointer"
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={onClose}
-                  className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm cursor-pointer"
-                >
-                  Confirm
+                  Show Tips
                 </button>
               </div>
             </div>
