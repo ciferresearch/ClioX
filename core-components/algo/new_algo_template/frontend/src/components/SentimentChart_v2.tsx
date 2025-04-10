@@ -391,24 +391,31 @@ const SentimentChartV2 = ({ skipLoading = false }: SentimentChartProps) => {
       .call(g => g.select('.domain').attr('stroke-width', 0.5)) // Thinner axis line
       .call(g => g.selectAll('.tick line').attr('stroke-width', 0.5)); // Thinner tick marks
 
-    // Add more specific labels at key points (e.g., specific months like April, July, October)
-    const timeLabels = [
-      new Date('2000-04-01'),
-      new Date('2000-07-01'),
-      new Date('2000-10-01'),
-      new Date('2001-01-01'),
-      new Date('2001-04-01')
-    ];
+    // Add more specific labels for months - create more evenly spaced labels
+    // Calculate appropriate number of month labels based on width
+    const monthsPerYear = width > 800 ? 4 : width > 600 ? 3 : 2;
+    const startYear = dateRange.start.getFullYear();
+    const endYear = dateRange.end.getFullYear();
+    
+    const timeLabels: Date[] = [];
+    
+    // Generate month labels for each year in the range
+    for (let year = startYear; year <= endYear; year++) {
+      for (let month = 0; month < 12; month += 12/monthsPerYear) {
+        const labelDate = new Date(year, month, 1);
+        if (labelDate >= dateRange.start && labelDate <= dateRange.end) {
+          timeLabels.push(labelDate);
+        }
+      }
+    }
 
     timeLabels.forEach(date => {
-      if (date >= dateRange.start && date <= dateRange.end) {
-        svg.append('text')
-          .attr('x', x(date))
-          .attr('y', chartCount * (chartHeight + spacing) - spacing + 25)
-          .attr('text-anchor', 'middle')
-          .attr('class', 'text-xs text-gray-500')
-          .text(d3.timeFormat('%b')(date));
-      }
+      svg.append('text')
+        .attr('x', x(date))
+        .attr('y', chartCount * (chartHeight + spacing) - spacing + 25)
+        .attr('text-anchor', 'middle')
+        .attr('class', 'text-xs text-gray-500')
+        .text(d3.timeFormat('%b')(date));
     });
 
     // Add a shared vertical line for tooltips
@@ -536,8 +543,8 @@ const SentimentChartV2 = ({ skipLoading = false }: SentimentChartProps) => {
     const container = d3.select(brushRef.current);
     container.selectAll('svg').remove();
 
-    // Set dimensions
-    const margin = { top: 10, right: 80, bottom: 20, left: 50 };
+    // Match margin settings to the main chart for consistent width
+    const margin = { top: 10, right: 40, bottom: 20, left: 50 };
     const width = brushRef.current.clientWidth - margin.left - margin.right;
     const height = 60 - margin.top - margin.bottom;
 
@@ -616,7 +623,7 @@ const SentimentChartV2 = ({ skipLoading = false }: SentimentChartProps) => {
       }
     });
 
-    // Add X axis to the brush
+    // Add X axis to the brush with improved month/year format
     svg.append('g')
       .attr('transform', `translate(0,${height})`)
       .call(d3.axisBottom(x)
@@ -626,7 +633,10 @@ const SentimentChartV2 = ({ skipLoading = false }: SentimentChartProps) => {
       .call(g => g.select('.domain').remove())
       .call(g => g.selectAll('.tick line')
         .attr('stroke', '#ccc')
-        .attr('stroke-dasharray', '2,2'));
+        .attr('stroke-dasharray', '2,2'))
+      .call(g => g.selectAll('.tick text') // Make sure tick labels don't overlap
+        .style('text-anchor', 'middle')
+        .attr('dy', '1em'));
 
     // Create brush component
     const brush = d3.brushX()
@@ -677,7 +687,7 @@ const SentimentChartV2 = ({ skipLoading = false }: SentimentChartProps) => {
       .attr('class', 'reset-button')
       .style('position', 'absolute')
       .style('top', '10px')
-      .style('right', '85px')
+      .style('right', '40px')  // Match the right margin
       .style('background-color', '#f3f4f6')
       .style('border', '1px solid #d1d5db')
       .style('border-radius', '4px')
