@@ -3,15 +3,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import ChartModal from './ChartModal';
-import SkeletonLoader from './SkeletonLoader';
+import ChartSkeleton from './ChartSkeleton';
 import ChartError from './ChartError';
+import { useDataStore } from '@/store/dataStore';
 
 interface DataDistributionProps {
   title: string;
   description?: string;
-  dataSource?: string;
-  skipLoading?: boolean; // Skip showing loading state if parent is already showing a skeleton
-  disableHover?: boolean; // Disable hover effects in the main view
+  type: 'email' | 'date';
+  skipLoading?: boolean;
+  disableHover?: boolean;
 }
 
 interface DataPoint {
@@ -28,7 +29,7 @@ interface FormattedDatePoint {
 const DataDistribution = ({
   title,
   description,
-  dataSource,
+  type,
   skipLoading = false,
   disableHover = false
 }: DataDistributionProps) => {
@@ -37,7 +38,10 @@ const DataDistribution = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [chartType, setChartType] = useState<'date' | 'email'>('date');
+  const [chartType, setChartType] = useState<'date' | 'email'>(type);
+  
+  // Get data fetching functions from store
+  const { fetchEmailDistribution, fetchDateDistribution } = useDataStore();
 
   // Fetch data with retry functionality
   const fetchDistributionData = useCallback(async () => {
@@ -45,32 +49,18 @@ const DataDistribution = ({
       setLoading(true);
       setError(null);
 
-      let endpoint = '';
-
-      // Determine which API endpoint to use based on the title/type
-      if (title.toLowerCase().includes('date')) {
-        endpoint = 'http://localhost:5001/api/distribution/date';
-        setChartType('date');
-      } else if (title.toLowerCase().includes('email counts')) {
-        endpoint = 'http://localhost:5001/api/distribution/email';
+      let csvText;
+      if (type === 'email') {
+        const emailData = await fetchEmailDistribution();
+        csvText = emailData;
         setChartType('email');
+      } else if (type === 'date') {
+        const dateData = await fetchDateDistribution();
+        csvText = dateData;
+        setChartType('date');
+      } else {
+        throw new Error('Invalid distribution type specified');
       }
-
-      if (!endpoint) {
-        throw new Error('No data source specified');
-      }
-
-      console.log('Fetching data from:', endpoint);
-
-      const response = await fetch(endpoint);
-      if (response.status === 503) {
-        throw new Error('Data is being processed. Please try again in a moment.');
-      }
-      if (!response.ok) {
-        throw new Error(`Failed to load data: ${response.statusText}`);
-      }
-
-      const csvText = await response.text();
 
       // Parse CSV data
       const parsedData = d3.csvParse(csvText);
@@ -82,7 +72,7 @@ const DataDistribution = ({
     } finally {
       setLoading(false);
     }
-  }, [title]);
+  }, [type, fetchEmailDistribution, fetchDateDistribution]);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -354,10 +344,10 @@ const DataDistribution = ({
         .text('Distribution of Emails per Day')
         .attr('class', 'text-xs font-semibold text-gray-700');
     } else {
-      console.warn('Could not determine chart type:', { data, dataSource });
+      console.warn('Could not determine chart type:', { data, type });
       container.innerHTML = '<p class="text-red-500 text-center">Error: Could not determine chart type</p>';
     }
-  }, [data, chartType, isModalOpen]);
+  }, [data, chartType]);
 
   // Handle opening the modal
   const handleOpenModal = () => {
@@ -389,17 +379,17 @@ const DataDistribution = ({
         )}
       </div>
       {description && <p className="text-gray-600 mb-4">{description}</p>}
-
+      
       <div
         ref={chartRef}
         className="w-full h-64 bg-gray-50 rounded flex items-center justify-center cursor-pointer"
         onClick={data.length > 0 && !loading && !error ? handleOpenModal : undefined}
       >
         {loading && !skipLoading ? (
-          <SkeletonLoader type={chartType === 'date' ? 'line' : 'bar'} height="h-64" />
+          <ChartSkeleton type={chartType === 'date' ? 'line' : 'bar'} height={256} />
         ) : error ? (
-          <ChartError
-            message={error}
+          <ChartError 
+            message={error} 
             onRetry={fetchDistributionData}
           />
         ) : data.length === 0 ? (

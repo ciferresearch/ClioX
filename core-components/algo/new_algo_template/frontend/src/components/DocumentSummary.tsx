@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import ChartError from './ChartError';
+import { useDataStore } from '@/store/dataStore';
 
 interface DocumentSummary {
   totalDocuments: number;
@@ -14,26 +15,24 @@ interface DocumentSummary {
   created: string;
 }
 
-const DocumentSummary = () => {
+interface DocumentSummaryProps {
+  skipLoading?: boolean;
+}
+
+const DocumentSummary = ({ skipLoading = false }: DocumentSummaryProps) => {
   const [summary, setSummary] = useState<DocumentSummary | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { fetchDocumentSummary } = useDataStore();
 
   // Define fetchSummary as a component method for reuse with error retry
   const fetchSummary = useCallback(async () => {
+    console.log("Fetching document summary data...");
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:5001/api/document/summary');
-      
-      if (response.status === 503) {
-        throw new Error('Data is being processed. Please try again in a moment.');
-      }
-      if (!response.ok) {
-        throw new Error(`Failed to load summary: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await fetchDocumentSummary();
+      console.log("Document summary data received:", data);
       setSummary(data);
     } catch (error) {
       console.error('Error fetching document summary:', error);
@@ -41,9 +40,10 @@ const DocumentSummary = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchDocumentSummary]);
 
   useEffect(() => {
+    console.log("DocumentSummary component loaded, skipLoading:", skipLoading);
     fetchSummary();
   }, [fetchSummary]);
   

@@ -112,6 +112,8 @@ def get_status():
             'wordcloud': os.path.exists('static/data/temp/processed_wordcloud.json')
         }
 
+        print("Status check - files_exist:", files_exist)
+
         # Check if all files exist
         all_processed = all(files_exist.values())
 
@@ -121,8 +123,11 @@ def get_status():
             'email_distribution': files_exist['email_distribution'],
             'sentiment_chart': files_exist['sentiment_data'],
             'wordcloud': files_exist['wordcloud'],
-            'document_summary': files_exist['cleaned_data']
+            'document_summary': files_exist['cleaned_data'],
+            'cleaned_data': files_exist['cleaned_data']
         }
+
+        print("Status check - component_status:", component_status)
 
         return jsonify({
             'status': 'ready' if all_processed else 'not_ready',
@@ -130,6 +135,7 @@ def get_status():
             'components': component_status
         })
     except Exception as e:
+        print(f"Error in status API: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
@@ -348,8 +354,10 @@ def get_wordcloud_data():
 def get_document_summary():
     """Get document summary"""
     try:
+        print("Document summary API called")
         # Check if we have cleaned data
         if not os.path.exists('outputs/enron_cleaned.csv'):
+            print("Error: No cleaned data file found at outputs/enron_cleaned.csv")
             return jsonify({
                 'status': 'error',
                 'message': 'No data available. Please run analysis first.'
@@ -357,6 +365,7 @@ def get_document_summary():
 
         # Read the cleaned data
         df = pd.read_csv('outputs/enron_cleaned.csv')
+        print(f"Loaded cleaned data with {len(df)} rows")
         
         # Calculate statistics
         total_documents = len(df)
@@ -386,8 +395,10 @@ def get_document_summary():
             "created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         
+        print("Successfully generated document summary stats")
         return jsonify(stats)
     except Exception as e:
+        print(f"Error in document summary API: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)

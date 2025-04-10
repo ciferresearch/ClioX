@@ -8,6 +8,7 @@ A Next.js application for visualizing text analysis results, including sentiment
 - **Data Distribution**: View email distribution by count and date
 - **Word Cloud**: Explore most frequent terms in the analyzed text
 - **Document Summary**: Get insights into document content
+- **State Management**: Centralized state management with Zustand
 
 ## Getting Started
 
@@ -34,6 +35,22 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - `src/components/` - React components for visualizations
 - `public/data/` - JSON data files for visualizations
 - `src/app/` - Next.js application pages
+- `src/store/` - Zustand state management
+
+## State Management
+
+This project uses Zustand for state management, offering several advantages:
+
+- **Simple & Lightweight**: Minimal boilerplate compared to Redux
+- **Centralized State**: All application state in one place
+- **TypeScript Support**: Strong typing for state and actions
+- **Hooks-based API**: Easy integration with functional components
+
+The main store is located at `src/store/dataStore.ts` and handles:
+- Data loading status for each visualization component
+- Global processing status and error handling
+- Status message display
+- Backend API communication
 
 ## Dependencies
 
@@ -41,6 +58,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - React
 - D3.js
 - Tailwind CSS
+- Zustand (State Management)
 
 ## Background
 
