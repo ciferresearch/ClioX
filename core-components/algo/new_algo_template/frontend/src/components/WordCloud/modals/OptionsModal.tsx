@@ -100,7 +100,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
 
         <div className="p-6 space-y-6">
           {/* Word Filtering Section */}
-          <div className="border-b pb-5">
+          <div>
             <h4 className="text-md font-semibold mb-4 text-gray-800">Word Filtering</h4>
             
             {/* Stoplist Section */}
@@ -226,7 +226,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
                   onChange={(e) => 
                     updateOption('fontFamily', e.target.value)
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   {FONT_FAMILIES.map((font) => (
                     <option key={font} value={font}>
@@ -248,7 +248,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
                   onChange={(e) => 
                     updateOption('colorSelection', e.target.value as "random" | "monochrome" | "category")
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   <option value="random">Colorful (Random)</option>
                   <option value="monochrome">Monochrome (Blue)</option>
