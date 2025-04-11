@@ -7,6 +7,7 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 # Download required NLTK data
 nltk.download('punkt')
 nltk.download('stopwords')
+nltk.download('punkt_tab')
 
 def extract(text):
     """Extract information from email text"""
