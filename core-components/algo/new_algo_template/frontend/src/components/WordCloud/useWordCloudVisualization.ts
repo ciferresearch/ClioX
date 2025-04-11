@@ -302,7 +302,10 @@ export const useWordCloudVisualization = ({
       if (zoomRef.current && typeof window !== "undefined") {
         // Small delay to ensure words are properly positioned
         setTimeout(() => {
-          svg.call(zoomRef.current!.transform, d3.zoomIdentity);
+          // Apply zoom transform with proper centering
+          const width = parseInt(svg.style("width"));
+          const height = parseInt(svg.style("height"));
+          svg.call(zoomRef.current!.transform, d3.zoomIdentity.translate(width/2, height/2).scale(0.87).translate(-width/2, -height/2));
         }, 100);
       }
     }, DEBOUNCE_DELAY),
@@ -522,7 +525,12 @@ export const useWordCloudVisualization = ({
         .attr("title", "Reset View")
         .on("click", () => {
           if (zoomRef.current) {
-            svg.transition().duration(300).call(zoomRef.current.transform, d3.zoomIdentity);
+            const width = parseInt(svg.style("width"));
+            const height = parseInt(svg.style("height"));
+            svg.transition().duration(300).call(
+              zoomRef.current.transform, 
+              d3.zoomIdentity.translate(width/2, height/2).scale(0.87).translate(-width/2, -height/2)
+            );
           }
         });
 
@@ -575,10 +583,15 @@ export const useWordCloudVisualization = ({
       
       // Small delay to ensure words are rendered before transform
       setTimeout(() => {
+        const width = parseInt(svg.style("width"));
+        const height = parseInt(svg.style("height"));
         svg
           .transition()
           .duration(300)
-          .call(zoomRef.current!.transform, d3.zoomIdentity);
+          .call(
+            zoomRef.current!.transform, 
+            d3.zoomIdentity.translate(width/2, height/2).scale(0.87).translate(-width/2, -height/2)
+          );
       }, 50);
     }
   }, []);
