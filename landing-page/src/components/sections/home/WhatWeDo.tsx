@@ -1,12 +1,18 @@
 import Container from '@/components/layout/Container';
+import PartnerCarousel from './PartnerCarousel';
 
 export default function WhatWeDo() {
-  // Using placeholder images instead of SVG files
   const partners = [
     { id: 1, name: 'Partner 1' },
     { id: 2, name: 'Partner 2' },
     { id: 3, name: 'Partner 3' },
     { id: 4, name: 'Partner 4' },
+    { id: 5, name: 'Partner 5' },
+    { id: 6, name: 'Partner 6' },
+    { id: 7, name: 'Partner 7' },
+    { id: 8, name: 'Partner 8' },
+    { id: 9, name: 'Partner 9' },
+    { id: 10, name: 'Partner 10' },
   ];
 
   return (
@@ -25,33 +31,8 @@ export default function WhatWeDo() {
           </p>
         </div>
 
-        {/* Partner logos grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-24">
-          {partners.map((partner) => (
-            <div
-              key={partner.id}
-              className="border border-gray-200 rounded-lg p-6 md:p-8 flex items-center justify-center hover:border-gray-300 transition-colors"
-            >
-              <div className="w-full h-24 md:h-32 bg-gray-100 rounded-md flex flex-col items-center justify-center p-4">
-                <svg
-                  className="w-10 h-10 text-gray-400 mb-2"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                    clipRule="evenodd"
-                  ></path>
-                </svg>
-                <span className="text-gray-500 text-sm text-center">
-                  {partner.name} Logo
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Partner logos carousel */}
+        <PartnerCarousel partners={partners} />
 
         {/* Bottom Content Section */}
         <div className="max-w-3xl mx-auto">
@@ -69,7 +50,6 @@ export default function WhatWeDo() {
             </p>
           </div>
         </div>
-
       </Container>
     </section>
   );
