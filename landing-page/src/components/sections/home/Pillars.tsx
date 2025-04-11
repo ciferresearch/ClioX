@@ -5,17 +5,17 @@ export default function Pillars() {
     {
       id: 1,
       title: 'Ethical Humanities Computing Framework',
-      content: 'We are developing a digital ecosystem designed to ensure that all participants can contribute equitably and benefit fairly from its use.'
+      content: 'We are developing a digital Web3 ecosystem designed to ensure that all participants can contribute equitably and benefit fairly.'
     },
     {
       id: 2,
-      title: 'Archives First Approach',
-      content: 'Our goal is to have a platform that is collectively owned, operated, and developed for the direct benefit of archives - prioritizing their sustainability and growth.'
+      title: 'Cultural Heritage First Approach',
+      content: 'Our goal is to have a platform that is collectively owned, operated, and developed for the direct benefit of archives and other cultural heritage institutions - prioritizing their sustainability and growth.'
     },
     {
       id: 3,
       title: 'Rethinking Traditional Business Models',
-      content: 'Conventional business models have monetized archival data, generating billion-dollar corporations, often without reinvesting in the archival community. We seek to shift this dynamic by centering the needs and growth of archives.'
+      content: 'Conventional business models have monetized archival and cultural heritage data, generating billion-dollar corporations, often without reinvesting in the archival and cultural heritage community. We seek to shift this dynamic by centering the needs and growth of archives and cultural heritage institutions.'
     },
   ];
 
@@ -25,7 +25,7 @@ export default function Pillars() {
         <div className="flex flex-col items-center text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Our Core Pillars</h2>
           <p className="max-w-3xl mx-auto text-lg text-gray-700">
-            Building a sustainable and ethical future for digital archives
+            Building a sustainable and ethical future for digital archives and cultural heritage
           </p>
         </div>
         

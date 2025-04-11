@@ -119,9 +119,11 @@ export default function ContactAndOnboarding() {
                 </div>
               </div>
 
+              {/* TODO: Whatsapp Contact instead of phone */}
+
               {/* Phone Contact */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800">Call Us</h3>
+                <h3 className="text-lg font-semibold text-gray-800">Find Us</h3>
                 <div className="flex items-center gap-3">
                   <svg
                     className="w-6 h-6 text-blue-600"
@@ -151,7 +153,7 @@ export default function ContactAndOnboarding() {
               {/* Social/Code */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-800">
-                  Find Us Online
+                  Build with Us
                 </h3>
                 <div className="flex items-center gap-3">
                   <svg

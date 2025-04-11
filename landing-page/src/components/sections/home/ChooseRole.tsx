@@ -15,22 +15,22 @@ type Role = {
 const roles: Role[] = [
   {
     icon: '🔍',
-    title: "I'm a Researcher",
-    description: 'Explore archival datasets to gain data-driven insights.',
+    title: "Researcher",
+    description: 'Explore archival datasets with AI to gain data-driven insights.',
     primaryAction: 'Sign Up',
     secondaryAction: 'Browse Catalogue'
   },
   {
     icon: '📚',
-    title: "I'm an Archivist/Cultural Institution",
-    description: 'Publish and protect your holdings with tools built for ethical stewardship and collaboration.',
+    title: "Archivist/Cultural Institution",
+    description: 'Publish and protect your holdings with tools built for ethical AI stewardship and collaboration.',
     primaryAction: 'Sign Up',
     secondaryAction: 'Publish Dataset'
   },
   {
     icon: '🏛️',
-    title: 'Become an Ecosystem Partner',
-    description: 'Ready to join a global values-aligned community?',
+    title: 'Ecosystem Partner',
+    description: 'Ready to join a global values-aligned Web3 community?',
     primaryAction: 'Become a Partner',
     secondaryAction: 'Learn More'
   }

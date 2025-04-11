@@ -26,7 +26,7 @@ export default function WhatWeDo() {
           
           <p className="max-w-3xl mx-auto text-lg md:text-xl text-gray-700 leading-relaxed">
             This platform was designed to be built together. From memory
-            institutions to research labs, our partners are shaping a shared
+            institutions to research labs, our partners are shaping a shared Web3
             ecosystem grounded in community, care, and transparency.
           </p>
         </div>
@@ -38,15 +38,15 @@ export default function WhatWeDo() {
         <div className="max-w-3xl mx-auto">
           <div className="space-y-8 text-lg text-gray-700 leading-relaxed">
             <p>
-              As public institutions increasingly digitize and share records online, and as more digital-born records become accessible, the risk of exposing sensitive personal data has grown significantly.
+              As public institutions increasingly digitize and share records online, and as more digital-born records become accessible, the risk of using AI, including exposing sensitive personal data, has grown significantly.
             </p>
             
             <p>
-              ClioX addresses these challenges by allowing archives to manage consent and usage rights for their data while ensuring that computations are performed where the data is stored. This means that the raw data is never moved or exposed; only the results or insights from the computations are shared.
+              ClioX addresses these risks by allowing archives to manage consent and usage rights for their data while ensuring that computations are performed where the data is stored. This means that the raw data is never moved or exposed; only the results or insights from the computations are shared.
             </p>
             
             <p>
-              The platform also provides AI + visual analytic tools to help researchers analyze large volumes of archival data and discover connections among them.
+              The platform also provides AI + visual analytic tools to help researchers analyze large volumes of archival data and discover new insights among them.
             </p>
           </div>
         </div>
