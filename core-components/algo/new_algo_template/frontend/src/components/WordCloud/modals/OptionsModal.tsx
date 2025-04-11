@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { WordCloudOptions } from "../types";
 import { FONT_FAMILIES } from "../constants";
 import { Language } from "../useStoplistManager";
@@ -49,6 +49,21 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
   onOpenStopwordsModal,
   onOpenWhitelistModal,
 }) => {
+  // Add effect to prevent body scrolling when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Save the current overflow style
+      const originalOverflow = document.body.style.overflow;
+      // Lock scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // Restore scrolling when modal closes
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const updateOption = <K extends keyof WordCloudOptions>(
@@ -70,7 +85,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-lg w-full max-w-[550px] transition-all duration-200 overflow-hidden">
         <div className="px-8 py-3 bg-gray-50 flex justify-between items-center">
           <h3 className="text-lg font-medium text-gray-800">Word Cloud Options</h3>
@@ -85,7 +100,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
 
         <div className="p-6 space-y-6">
           {/* Word Filtering Section */}
-          <div className="border-b pb-5">
+          <div>
             <h4 className="text-md font-semibold mb-4 text-gray-800">Word Filtering</h4>
             
             {/* Stoplist Section */}
@@ -106,11 +121,12 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
                 <button
                   onClick={onOpenStopwordsModal}
                   disabled={!stoplistActive}
-                  className={`px-2 py-1 text-xs font-medium rounded 
+                  className={`px-2 py-1 text-xs font-medium rounded transition-colors
                             ${stoplistActive
                               ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
-                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-75'
                             }`}
+                  title={!stoplistActive ? "Enable stopwords first to edit the list" : "Edit stopwords list"}
                 >
                   Edit List
                 </button>
@@ -123,9 +139,11 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
                 <select
                   value={selectedLanguage}
                   onChange={(e) => setLanguage(e.target.value as Language)}
-                  className="form-select block w-full rounded-md border-gray-300 shadow-sm 
-                            focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className={`form-select block w-full rounded-md border-gray-300 shadow-sm 
+                            focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm
+                            ${!stoplistActive ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-75' : ''}`}
                   disabled={!stoplistActive}
+                  title={!stoplistActive ? "Enable stopwords first to select a language" : ""}
                 >
                   {languageOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -172,11 +190,12 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
                 <button
                   onClick={onOpenWhitelistModal}
                   disabled={!whitelistActive}
-                  className={`px-2 py-1 text-xs font-medium rounded 
+                  className={`px-2 py-1 text-xs font-medium rounded transition-colors
                             ${whitelistActive
                               ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
-                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-75'
                             }`}
+                  title={!whitelistActive ? "Enable whitelist first to edit the list" : "Edit whitelist"}
                 >
                   Edit List
                 </button>
@@ -211,7 +230,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
                   onChange={(e) => 
                     updateOption('fontFamily', e.target.value)
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   {FONT_FAMILIES.map((font) => (
                     <option key={font} value={font}>
@@ -233,7 +252,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
                   onChange={(e) => 
                     updateOption('colorSelection', e.target.value as "random" | "monochrome" | "category")
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   <option value="random">Colorful (Random)</option>
                   <option value="monochrome">Monochrome (Blue)</option>

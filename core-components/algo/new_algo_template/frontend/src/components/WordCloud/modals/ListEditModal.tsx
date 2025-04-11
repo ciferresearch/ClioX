@@ -42,6 +42,21 @@ const ListEditModal: React.FC<ListEditModalProps> = ({
       textareaRef.current.setSelectionRange(length, length);
     }
   }, [isOpen]);
+  
+  // Prevent body scrolling when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Save the current overflow style
+      const originalOverflow = document.body.style.overflow;
+      // Lock scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // Restore scrolling when modal closes
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
 
   // Prevent event propagation to parent elements
   const handleContentClick = (e: React.MouseEvent) => {
@@ -77,7 +92,7 @@ const ListEditModal: React.FC<ListEditModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+      className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
       onClick={onClose}
     >
       <div

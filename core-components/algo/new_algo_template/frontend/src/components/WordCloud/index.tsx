@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useWordCloudVisualization } from "./useWordCloudVisualization";
 import OptionsModal from "./modals/OptionsModal";
 import ListEditModal from "./modals/ListEditModal";
@@ -96,6 +96,10 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
   const modalsOpenRef = useRef(isOptionsModalOpen || isStopwordsModalOpen || isWhitelistModalOpen);
   const isWordSelectionActionRef = useRef(isWordSelectionAction);
   
+  // Track the last render timestamp to prevent duplicate renders
+  const lastRenderTimestampRef = useRef<number>(0);
+  const RENDER_DEBOUNCE_MS = 500;
+
   // Keep refs in sync with store state
   useEffect(() => {
     shouldUpdateLayoutRef.current = shouldUpdateLayout;
@@ -197,53 +201,45 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
     }
   }, [fetchData, skipLoading]);
 
-  // Force initial render after data is loaded
+  // Single unified effect to handle all word cloud updates
   useEffect(() => {
-    // Only execute this when loading completes and we have data
-    if (!isLoading && filteredWords.length > 0 && svgRef.current) {
-      console.log("Triggering initial word cloud render");
-      
-      // Give time for the SVG to initialize
-      const timer = setTimeout(() => {
-        // Set the flag before debounced update
-        shouldUpdateLayoutRef.current = true;
-        debouncedUpdate(filteredWords);
-      }, 500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, filteredWords, debouncedUpdate]);
-
-  // Update word cloud when filtered words change
-  useEffect(() => {
-    // Skip updates while loading
-    if (isLoading) {
+    // Only proceed if we have the SVG reference and words to display
+    if (!svgRef.current || !filteredWords.length) {
       return;
     }
-
-    // Skip updates if any modal is open
-    if (modalsOpenRef.current) {
+    
+    // Skip updates when loading or modals are open
+    if (isLoading || modalsOpenRef.current) {
+      console.log("Skipping word cloud update: loading or modal open");
       return;
     }
-
-    // When a word is selected or panel is closed:
-    // - Both are marked as isWordSelectionAction = true in the store
-    // - Allow update but mark it as a word selection to prevent relayout
-    // - The debouncedUpdate function will handle this correctly
-    if (isWordSelectionAction) {
-      console.log("Panel state change detected (open/close), allowing update with isWordSelectionAction flag");
+    
+    console.log("Word cloud update triggered", {
+      wordCount: filteredWords.length,
+      shouldUpdateLayout,
+      isWordSelectionAction,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Set the layout flag based on current state
+    shouldUpdateLayoutRef.current = shouldUpdateLayout;
+    
+    // Add a small delay for initial render to ensure SVG is ready
+    const delay = 100;
+    
+    // Use setTimeout to prevent React 18 double-rendering issues in dev mode
+    const timerId = setTimeout(() => {
       debouncedUpdate(filteredWords);
-      return;
-    }
-
-    // For all other updates, proceed normally
-    console.log("Normal layout update");
-    debouncedUpdate(filteredWords);
+    }, delay);
+    
+    return () => clearTimeout(timerId);
   }, [
-    filteredWords, 
-    isLoading, 
-    modalsOpenRef, 
-    isWordSelectionAction, 
+    // Dependencies that should trigger an update
+    filteredWords,
+    isLoading,
+    shouldUpdateLayout,
+    // Don't add isWordSelectionAction as dependency 
+    // to prevent unnecessary renders from panel interactions
     debouncedUpdate
   ]);
 
@@ -331,7 +327,7 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
         <h2 className="text-xl font-semibold text-gray-800 pb-2">Word Cloud</h2>
         <button
           onClick={openOptionsModal}
-          className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-300 hover:bg-gray-50 shadow-sm"
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium cursor-pointer"
         >
           Options
         </button>
@@ -346,23 +342,24 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
             type="text"
             value={searchTerm}
             onChange={(e) => {
-              if (e.target.value === '') {
-                setSearchTerm('');
+              if (e.target.value === "") {
+                setSearchTerm("");
               } else {
                 setSearchTerm(e.target.value);
               }
             }}
             placeholder="Filter words..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md h-10"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-gray-400 h-10 text-sm transition-colors"
           />
         </div>
 
         <div className="flex flex-col">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Minimum frequency: {typeof window !== 'undefined' ? minFrequency : ''}
+            Minimum frequency:{" "}
+            {typeof window !== "undefined" ? minFrequency : ""}
           </label>
           <div className="flex items-center h-10">
-            {typeof window !== 'undefined' && (
+            {typeof window !== "undefined" && (
               <input
                 type="range"
                 min={minCount}
@@ -372,7 +369,7 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
                   const newValue = Number(e.target.value);
                   setMinFrequency(newValue);
                 }}
-                className="w-full"
+                className="w-full cursor-pointer"
               />
             )}
           </div>
@@ -380,19 +377,23 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
 
         <div className="flex flex-col">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Max words: {typeof window !== 'undefined' ? maxWords : ''}
+            Max words to display:{" "}
+            {typeof window !== "undefined" ? maxWords : ""}
           </label>
           <div className="flex items-center h-10">
-            {typeof window !== 'undefined' && (
+            {typeof window !== "undefined" && (
               <input
                 type="range"
                 min={10}
-                max={300}
+                // Calculate a reasonable maximum: either 500 or double the total words count, whichever is smaller
+                max={words.length}
                 value={maxWords}
                 onChange={(e) => {
+                  // Update max words in store when slider changes
+                  // This will automatically save to localStorage via the store action
                   setMaxWords(Number(e.target.value));
                 }}
-                className="w-full"
+                className="w-full cursor-pointer"
               />
             )}
           </div>
@@ -401,16 +402,14 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
 
       <div className="flex flex-col md:flex-row gap-4">
         {/* Main container - using CSS Grid for smoother transitions */}
-        <div 
+        <div
           className={`grid transition-all duration-300 ease-in-out gap-4 ${
-            isPanelVisible ? 'grid-cols-[1fr_auto]' : 'grid-cols-[1fr]'
+            isPanelVisible ? "grid-cols-[1fr_auto]" : "grid-cols-[1fr]"
           }`}
-          style={{ width: '100%' }}
+          style={{ width: "100%" }}
         >
           {/* Word cloud visualization - will automatically adjust with CSS Grid */}
-          <div
-            className="h-[550px] bg-gray-50 rounded flex items-center justify-center p-4 overflow-hidden relative wordcloud-container"
-          >
+          <div className="h-[550px] bg-gray-50 rounded flex items-center justify-center p-4 overflow-hidden relative wordcloud-container">
             {isLoading && (
               <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
                 <div className="flex items-center space-x-2">
@@ -419,12 +418,9 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
                 </div>
               </div>
             )}
-            
+
             {error ? (
-              <ChartError 
-                message={error} 
-                onRetry={fetchData}
-              />
+              <ChartError message={error} onRetry={fetchData} />
             ) : isUpdating ? (
               <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
                 <div className="flex items-center space-x-2">
@@ -433,19 +429,48 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
                 </div>
               </div>
             ) : (
-              <svg
-                ref={svgRef}
-                width="100%"
-                height="100%"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  cursor: "grab",
-                }}
-                className={isUpdating ? "opacity-50" : "opacity-100"}
-              />
+              <>
+                {!isLoading && filteredWords.length === 0 && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center z-5 bg-white shadow-inner rounded">
+                    <div className="text-gray-600 text-center p-6 max-w-md bg-gray-50 rounded-lg border border-gray-100 shadow-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-14 w-14 mx-auto mb-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      <h3 className="text-xl font-semibold mb-2">No Words to Display</h3>
+                      <p className="mb-4 text-gray-500">Your current filters don't match any words.</p>
+                      
+                      <div className="space-y-3 text-left">
+                        {searchTerm && (
+                          <div className="p-3 bg-purple-50 rounded-md text-purple-700 text-sm">
+                            <span className="font-semibold block mb-1">Search term has no matches</span>
+                            Your search term "{searchTerm}" doesn't match any words.
+                          </div>
+                        )}
+                        
+                        {minFrequency > minCount && (
+                          <div className="p-3 bg-amber-50 rounded-md text-amber-700 text-sm">
+                            <span className="font-semibold block mb-1">Frequency threshold too high</span>
+                            Minimum frequency is set to {minFrequency}. Try lowering it.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <svg
+                  ref={svgRef}
+                  width="100%"
+                  height="100%"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    cursor: "grab",
+                  }}
+                  className={isUpdating ? "opacity-50" : "opacity-100"}
+                />
+              </>
             )}
-            
+
             <style jsx>{`
               .wordcloud-container svg:active {
                 cursor: grabbing;
@@ -473,15 +498,20 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
       <div className="mt-4 p-3 bg-gray-50 rounded text-sm text-gray-600">
         <div className="flex flex-wrap gap-2 justify-between items-center">
           <div>
-            {typeof window !== 'undefined' ? (
+            {typeof window !== "undefined" ? (
               <>
                 Showing {filteredWords.length} of {words.length} words.
                 {filteredWords.length > 0 && (
                   <span>
                     {" "}
-                    Frequency range: {Math.min(
+                    Frequency range:{" "}
+                    {Math.min(
                       ...filteredWords.map((w: { count: number }) => w.count)
-                    )} to {Math.max(...filteredWords.map((w: { count: number }) => w.count))}
+                    )}{" "}
+                    to{" "}
+                    {Math.max(
+                      ...filteredWords.map((w: { count: number }) => w.count)
+                    )}
                   </span>
                 )}
               </>
@@ -489,14 +519,16 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
               <>Loading word statistics...</>
             )}
           </div>
-          
+
           <div className="flex items-center gap-4 text-xs">
             {stoplistActive ? (
               <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full">
-                {selectedLanguage === 'custom' ? 'Custom Stopwords' : `${selectedLanguage} Stopwords`}
+                {selectedLanguage === "custom"
+                  ? "Custom Stopwords"
+                  : `${selectedLanguage} Stopwords`}
               </span>
             ) : null}
-            
+
             {whitelistActive ? (
               <span className="px-2 py-1 bg-green-50 text-green-700 rounded-full">
                 Whitelist Active
@@ -519,7 +551,6 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
         }}
         onClose={closeOptionsModal}
         onSave={saveOptions}
-        
         // Stoplist/Whitelist related props
         selectedLanguage={selectedLanguage}
         stoplistActive={stoplistActive}
