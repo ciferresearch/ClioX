@@ -121,11 +121,12 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
                 <button
                   onClick={onOpenStopwordsModal}
                   disabled={!stoplistActive}
-                  className={`px-2 py-1 text-xs font-medium rounded 
+                  className={`px-2 py-1 text-xs font-medium rounded transition-colors
                             ${stoplistActive
                               ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
-                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-75'
                             }`}
+                  title={!stoplistActive ? "Enable stopwords first to edit the list" : "Edit stopwords list"}
                 >
                   Edit List
                 </button>
@@ -138,9 +139,11 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
                 <select
                   value={selectedLanguage}
                   onChange={(e) => setLanguage(e.target.value as Language)}
-                  className="form-select block w-full rounded-md border-gray-300 shadow-sm 
-                            focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className={`form-select block w-full rounded-md border-gray-300 shadow-sm 
+                            focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm
+                            ${!stoplistActive ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-75' : ''}`}
                   disabled={!stoplistActive}
+                  title={!stoplistActive ? "Enable stopwords first to select a language" : ""}
                 >
                   {languageOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -187,11 +190,12 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
                 <button
                   onClick={onOpenWhitelistModal}
                   disabled={!whitelistActive}
-                  className={`px-2 py-1 text-xs font-medium rounded 
+                  className={`px-2 py-1 text-xs font-medium rounded transition-colors
                             ${whitelistActive
                               ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
-                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-75'
                             }`}
+                  title={!whitelistActive ? "Enable whitelist first to edit the list" : "Edit whitelist"}
                 >
                   Edit List
                 </button>

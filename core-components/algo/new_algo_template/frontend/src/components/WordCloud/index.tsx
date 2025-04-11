@@ -327,7 +327,7 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
         <h2 className="text-xl font-semibold text-gray-800 pb-2">Word Cloud</h2>
         <button
           onClick={openOptionsModal}
-          className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-300 hover:bg-gray-50 shadow-sm"
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium cursor-pointer"
         >
           Options
         </button>
@@ -349,7 +349,7 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
               }
             }}
             placeholder="Filter words..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md h-10"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-gray-400 h-10 text-sm transition-colors"
           />
         </div>
 
@@ -369,7 +369,7 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
                   const newValue = Number(e.target.value);
                   setMinFrequency(newValue);
                 }}
-                className="w-full"
+                className="w-full cursor-pointer"
               />
             )}
           </div>
@@ -393,7 +393,7 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
                   // This will automatically save to localStorage via the store action
                   setMaxWords(Number(e.target.value));
                 }}
-                className="w-full"
+                className="w-full cursor-pointer"
               />
             )}
           </div>
