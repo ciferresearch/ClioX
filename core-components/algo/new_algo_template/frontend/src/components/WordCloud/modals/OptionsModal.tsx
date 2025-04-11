@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { WordCloudOptions } from "../types";
 import { FONT_FAMILIES } from "../constants";
 import { Language } from "../useStoplistManager";
@@ -49,6 +49,21 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
   onOpenStopwordsModal,
   onOpenWhitelistModal,
 }) => {
+  // Add effect to prevent body scrolling when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Save the current overflow style
+      const originalOverflow = document.body.style.overflow;
+      // Lock scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // Restore scrolling when modal closes
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const updateOption = <K extends keyof WordCloudOptions>(
@@ -70,7 +85,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-lg w-full max-w-[550px] transition-all duration-200 overflow-hidden">
         <div className="px-8 py-3 bg-gray-50 flex justify-between items-center">
           <h3 className="text-lg font-medium text-gray-800">Word Cloud Options</h3>
