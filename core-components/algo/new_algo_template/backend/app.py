@@ -515,8 +515,8 @@ def generate_wordcloud_data(df):
         word_counts = Counter(words)
 
         # Get the most common words
-        min_count = 5
-        limit = 100
+        min_count = 1
+        limit = 700
 
         most_common = [
             {"value": word, "count": count}

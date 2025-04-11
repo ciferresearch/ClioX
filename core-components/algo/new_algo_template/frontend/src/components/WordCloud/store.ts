@@ -770,18 +770,11 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      // TODO: Replace with real API endpoint
-      const response = await fetch("/data/temp/processed_wordcloud.json");
+      // Import the dataStore
+      const { fetchWordCloudData } = await import('@/store/dataStore').then(module => module.useDataStore.getState());
       
-      if (response.status === 503) {
-        throw new Error('Data is being processed. Please try again in a moment.');
-      }
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load word cloud data: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
+      // Fetch data from the API
+      const data = await fetchWordCloudData();
       
       // Calculate the minimum frequency in the dataset
       const minCount = Math.min(...data.wordCloudData.map((w: WordData) => w.count));
