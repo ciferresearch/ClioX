@@ -446,6 +446,13 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
                             Your search term "{searchTerm}" doesn't match any words.
                           </div>
                         )}
+                        
+                        {minFrequency > minCount && (
+                          <div className="p-3 bg-amber-50 rounded-md text-amber-700 text-sm">
+                            <span className="font-semibold block mb-1">Frequency threshold too high</span>
+                            Minimum frequency is set to {minFrequency}. Try lowering it.
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
