@@ -194,7 +194,7 @@ const SentimentChartV2 = ({ skipLoading = false }: SentimentChartProps) => {
         .style('pointer-events', 'none')
         .style('font-size', '12px')
         .style('z-index', '10')
-        .style('transition', 'transform 0.1s ease-out'); // Smooth tooltip movement
+        .style('transition', 'left 0.15s ease-out, top 0.15s ease-out'); // Smooth position transitions
     }
 
     container.selectAll('svg').remove();
@@ -396,9 +396,9 @@ const SentimentChartV2 = ({ skipLoading = false }: SentimentChartProps) => {
     const monthsPerYear = width > 800 ? 4 : width > 600 ? 3 : 2;
     const startYear = dateRange.start.getFullYear();
     const endYear = dateRange.end.getFullYear();
-    
+
     const timeLabels: Date[] = [];
-    
+
     // Generate month labels for each year in the range
     for (let year = startYear; year <= endYear; year++) {
       for (let month = 0; month < 12; month += 12/monthsPerYear) {
@@ -524,10 +524,27 @@ const SentimentChartV2 = ({ skipLoading = false }: SentimentChartProps) => {
 
         // Position and populate the tooltip
         if (tooltipRef.current) {
+          // First, update the content
+          tooltipRef.current.html(tooltipContent);
+
+          // Get the tooltip dimensions
+          const tooltipNode = tooltipRef.current.node();
+          const tooltipWidth = tooltipNode ? tooltipNode.getBoundingClientRect().width : 200;
+
+          // Get the chart container dimensions
+          const chartContainer = d3.select(chartRef.current).node();
+          const containerWidth = chartContainer ? chartContainer.getBoundingClientRect().width : 0;
+
+          // Check if there's enough space on the right
+          const spaceOnRight = containerWidth - event.offsetX;
+          const tooltipX = spaceOnRight < (tooltipWidth + 20) ?
+            `${event.offsetX - tooltipWidth - 10}px` : // Position to the left of the cursor
+            `${event.offsetX + 15}px`;                 // Position to the right of the cursor
+
+          // Update the position
           tooltipRef.current
-            .style('left', `${event.offsetX + 15}px`)
-            .style('top', `${event.offsetY - 28}px`)
-            .html(tooltipContent);
+            .style('left', tooltipX)
+            .style('top', `${event.offsetY - 28}px`);
         }
       })
       .on('mouseout', () => {
