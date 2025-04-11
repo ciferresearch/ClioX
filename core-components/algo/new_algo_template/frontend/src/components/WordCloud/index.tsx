@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useWordCloudVisualization } from "./useWordCloudVisualization";
 import OptionsModal from "./modals/OptionsModal";
 import ListEditModal from "./modals/ListEditModal";
@@ -96,6 +96,10 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
   const modalsOpenRef = useRef(isOptionsModalOpen || isStopwordsModalOpen || isWhitelistModalOpen);
   const isWordSelectionActionRef = useRef(isWordSelectionAction);
   
+  // Track the last render timestamp to prevent duplicate renders
+  const lastRenderTimestampRef = useRef<number>(0);
+  const RENDER_DEBOUNCE_MS = 500;
+
   // Keep refs in sync with store state
   useEffect(() => {
     shouldUpdateLayoutRef.current = shouldUpdateLayout;
@@ -197,73 +201,45 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
     }
   }, [fetchData, skipLoading]);
 
-  // Force initial render after data is loaded
+  // Single unified effect to handle all word cloud updates
   useEffect(() => {
-    // Only execute this when loading completes and we have data
-    if (!isLoading && filteredWords.length > 0 && svgRef.current) {
-      console.log("Triggering initial word cloud render");
-      
-      // Give time for the SVG to initialize
-      const timer = setTimeout(() => {
-        // Set the flag before debounced update
-        shouldUpdateLayoutRef.current = true;
-        debouncedUpdate(filteredWords);
-      }, 500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, filteredWords, debouncedUpdate]);
-
-  // Update word cloud when filtered words change
-  useEffect(() => {
-    // Skip updates while loading
-    if (isLoading) {
-      console.log("Skipping update: WordCloud is still loading");
-      return;
-    }
-
-    // Skip updates if any modal is open
-    if (modalsOpenRef.current) {
-      console.log("Skipping update: Modal is open");
-      return;
-    }
-
-    // Log filtering information to help with debugging
-    console.log("FilteredWords changed:", {
-      count: filteredWords.length,
-      shouldUpdateLayout,
-      isWordSelectionAction
-    });
-
-    // When a word is selected or panel is closed:
-    // - Both are marked as isWordSelectionAction = true in the store
-    // - Allow update but mark it as a word selection to prevent relayout
-    // - The debouncedUpdate function will handle this correctly
-    if (isWordSelectionAction) {
-      console.log("Panel state change detected (open/close), allowing update with isWordSelectionAction flag");
-      debouncedUpdate(filteredWords);
+    // Only proceed if we have the SVG reference and words to display
+    if (!svgRef.current || !filteredWords.length) {
       return;
     }
     
-    // For updates triggered by filter changes (stoplist/whitelist toggle)
-    // We want to ensure the layout is always updated
-    if (shouldUpdateLayout) {
-      console.log("Layout update required - triggering full re-render");
-      // Ensure the ref is updated immediately
-      shouldUpdateLayoutRef.current = true;
-      debouncedUpdate(filteredWords);
+    // Skip updates when loading or modals are open
+    if (isLoading || modalsOpenRef.current) {
+      console.log("Skipping word cloud update: loading or modal open");
       return;
     }
-
-    // For all other updates, proceed normally
-    console.log("Normal layout update");
-    debouncedUpdate(filteredWords);
+    
+    console.log("Word cloud update triggered", {
+      wordCount: filteredWords.length,
+      shouldUpdateLayout,
+      isWordSelectionAction,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Set the layout flag based on current state
+    shouldUpdateLayoutRef.current = shouldUpdateLayout;
+    
+    // Add a small delay for initial render to ensure SVG is ready
+    const delay = 100;
+    
+    // Use setTimeout to prevent React 18 double-rendering issues in dev mode
+    const timerId = setTimeout(() => {
+      debouncedUpdate(filteredWords);
+    }, delay);
+    
+    return () => clearTimeout(timerId);
   }, [
-    filteredWords, 
-    isLoading, 
-    modalsOpenRef, 
-    isWordSelectionAction,
-    shouldUpdateLayout, 
+    // Dependencies that should trigger an update
+    filteredWords,
+    isLoading,
+    shouldUpdateLayout,
+    // Don't add isWordSelectionAction as dependency 
+    // to prevent unnecessary renders from panel interactions
     debouncedUpdate
   ]);
 
@@ -453,17 +429,39 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
                 </div>
               </div>
             ) : (
-              <svg
-                ref={svgRef}
-                width="100%"
-                height="100%"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  cursor: "grab",
-                }}
-                className={isUpdating ? "opacity-50" : "opacity-100"}
-              />
+              <>
+                {!isLoading && filteredWords.length === 0 && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center z-5 bg-white shadow-inner rounded">
+                    <div className="text-gray-600 text-center p-6 max-w-md bg-gray-50 rounded-lg border border-gray-100 shadow-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-14 w-14 mx-auto mb-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      <h3 className="text-xl font-semibold mb-2">No Words to Display</h3>
+                      <p className="mb-4 text-gray-500">Your current filters don't match any words.</p>
+                      
+                      <div className="space-y-3 text-left">
+                        {searchTerm && (
+                          <div className="p-3 bg-purple-50 rounded-md text-purple-700 text-sm">
+                            <span className="font-semibold block mb-1">Search term has no matches</span>
+                            Your search term "{searchTerm}" doesn't match any words.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <svg
+                  ref={svgRef}
+                  width="100%"
+                  height="100%"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    cursor: "grab",
+                  }}
+                  className={isUpdating ? "opacity-50" : "opacity-100"}
+                />
+              </>
             )}
 
             <style jsx>{`

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, MutableRefObject, useState } from 'react';
+import { useEffect, useRef, useCallback, MutableRefObject, useState, useMemo } from 'react';
 import * as d3 from 'd3';
 import cloud from 'd3-cloud';
 import debounce from 'lodash/debounce';
@@ -44,6 +44,18 @@ export const useWordCloudVisualization = ({
     height: dimensions.height,
     lastUpdate: 0,
   });
+  
+  // Add a ref to track the last update time to prevent duplicate renders
+  const lastUpdateTimeRef = useRef<number>(0);
+  // Add a cache key to identify unique render requests
+  const renderRequestRef = useRef<string>("");
+  // Minimum time between full renders in milliseconds
+  const RENDER_THROTTLE_MS = 300;
+  
+  // Use a ref to track if a render is in progress
+  const renderInProgressRef = useRef<boolean>(false);
+  // Track render count for debugging
+  const renderCountRef = useRef<number>(0);
 
   // Get color for a word
   const getWordColor = useCallback(
@@ -119,19 +131,108 @@ export const useWordCloudVisualization = ({
     [dimensions, fontFamily]
   );
 
-  // Debounced update function
+  // Enhanced debounced update function with better safeguards
   const debouncedUpdate = useCallback(
     debounce(async (words: WordData[]) => {
-      if (!svgRef.current) return;
+      // Check if we're already updating (critical to prevent double renders)
+      if (renderInProgressRef.current) {
+        console.log("Skipping render: another render already in progress");
+        return;
+      }
+      
+      // Mark render as in progress
+      renderInProgressRef.current = true;
+      
+      // Increment render count
+      renderCountRef.current += 1;
+      const currentRenderCount = renderCountRef.current;
+      
+      console.log(`Starting word cloud render #${currentRenderCount}`);
+
+      if (!svgRef.current) {
+        renderInProgressRef.current = false;
+        return;
+      }
 
       // Don't update if we're not visible
-      if (svgRef.current.closest("div")?.offsetParent === null) return;
+      if (svgRef.current.closest("div")?.offsetParent === null) {
+        renderInProgressRef.current = false;
+        return;
+      }
 
       // Skip updates if modals are open
       if (modalsOpenRef.current) {
         console.log("Skipping update because modals are open");
+        renderInProgressRef.current = false;
         return;
       }
+      
+      // IMPORTANT: Always clear the word cloud when there are no words to display
+      if (words.length === 0) {
+        setIsUpdating(true);
+        console.log("No words to display, clearing word cloud");
+        
+        try {
+          const svg = d3.select(svgRef.current);
+          const wordsContainer = svg.select(".words-container");
+          if (!wordsContainer.empty()) {
+            const wordsGroup = wordsContainer.select(".words-group");
+            if (!wordsGroup.empty()) {
+              // Remove all existing words with fade out animation
+              wordsGroup
+                .selectAll<SVGTextElement, CloudWord>("text")
+                .transition()
+                .duration(TRANSITION_DURATION / 2)
+                .style("opacity", 0)
+                .remove();
+            }
+          }
+          
+          // Reset previous words to ensure they don't persist
+          previousWordsRef.current = [];
+        } catch (e) {
+          console.error("Error clearing word cloud:", e);
+        } finally {
+          setIsUpdating(false);
+          renderInProgressRef.current = false;
+        }
+        return;
+      }
+      
+      // Generate a cache key based on words array and other relevant state
+      const wordFingerprint = words.length > 0 ? 
+        `${words.length}:${words[0].value}:${words[words.length-1].value}` : "";
+      
+      const currentCacheKey = JSON.stringify({
+        wordFingerprint,
+        dimensions: `${dimensions.width}x${dimensions.height}`,
+        fontFamily,
+        colorSelection,
+        renderCount: currentRenderCount
+      });
+      
+      // Prevent duplicate renders that happen too close together
+      // Skip if this is the same render request or if not enough time has elapsed
+      const now = new Date().getTime();
+      const timeSinceLastRender = now - lastUpdateTimeRef.current;
+      
+      if (
+        (renderRequestRef.current === currentCacheKey && timeSinceLastRender < 2000) || 
+        (!shouldUpdateLayoutRef.current && timeSinceLastRender < RENDER_THROTTLE_MS)
+      ) {
+        console.log(`Skipping duplicate render request #${currentRenderCount} - too similar to previous render`);
+        renderInProgressRef.current = false;
+        return;
+      }
+      
+      // Update the cache key and timestamp for this render
+      renderRequestRef.current = currentCacheKey;
+      lastUpdateTimeRef.current = now;
+      
+      console.log(`Processing render #${currentRenderCount} for ${words.length} words`, { 
+        shouldUpdateLayout: shouldUpdateLayoutRef.current,
+        isWordSelectionAction: isWordSelectionActionRef.current
+      });
 
       // There are two cases where we want to avoid complete relayout:
       // 1. Word selection/panel interaction (tracked by isWordSelectionActionRef)
@@ -169,6 +270,7 @@ export const useWordCloudVisualization = ({
         }
         previousWordsRef.current = [];
         setIsUpdating(false);
+        renderInProgressRef.current = false;
         return;
       }
       
@@ -212,6 +314,7 @@ export const useWordCloudVisualization = ({
               console.log("Recentered words after panel state change");
             }
             
+            renderInProgressRef.current = false;
             return;
           } else {
             console.log("No existing words found in group, proceeding with full render");
@@ -222,94 +325,98 @@ export const useWordCloudVisualization = ({
       // Proceed with full render
       setIsUpdating(true);
       
-      const cloudWords = await createWordCloudLayout(words);
-      const svg = d3.select(svgRef.current);
+      try {
+        const cloudWords = await createWordCloudLayout(words);
+        const svg = d3.select(svgRef.current);
 
-      // Update words group - need to access words-group inside words-container
-      const wordsContainer = svg.select(".words-container");
-      if (wordsContainer.empty()) return;
+        // Update words group - need to access words-group inside words-container
+        const wordsContainer = svg.select(".words-container");
+        if (wordsContainer.empty()) return;
 
-      const wordsGroup = wordsContainer.select(".words-group");
-      if (wordsGroup.empty()) return;
+        const wordsGroup = wordsContainer.select(".words-group");
+        if (wordsGroup.empty()) return;
 
-      // Update existing words and add new ones
-      const wordElements = wordsGroup
-        .selectAll<SVGTextElement, CloudWord>("text")
-        .data(cloudWords, (d) => d.text);
+        // Update existing words and add new ones
+        const wordElements = wordsGroup
+          .selectAll<SVGTextElement, CloudWord>("text")
+          .data(cloudWords, (d) => d.text);
 
-      // Remove words that are no longer present with fade out
-      wordElements
-        .exit()
-        .transition()
-        .duration(TRANSITION_DURATION / 2)
-        .style("opacity", 0)
-        .remove();
+        // Remove words that are no longer present with fade out
+        wordElements
+          .exit()
+          .transition()
+          .duration(TRANSITION_DURATION / 2)
+          .style("opacity", 0)
+          .remove();
 
-      // Add new words
-      const enterWords = wordElements
-        .enter()
-        .append("text")
-        .style("opacity", 0)
-        .style("font-family", fontFamily)
-        .style("cursor", "pointer")
-        .attr("text-anchor", "middle")
-        .text((d) => d.text)
-        .attr("class", "cloud-word");
+        // Add new words
+        const enterWords = wordElements
+          .enter()
+          .append("text")
+          .style("opacity", 0)
+          .style("font-family", fontFamily)
+          .style("cursor", "pointer")
+          .attr("text-anchor", "middle")
+          .text((d) => d.text)
+          .attr("class", "cloud-word");
 
-      // Single transition for all words
-      wordElements
-        .merge(enterWords)
-        .style("fill", getWordColor)
-        .transition()
-        .duration(TRANSITION_DURATION)
-        .style("opacity", 1)
-        .style("font-size", (d) => `${d.size}px`)
-        .style("font-family", fontFamily)
-        .attr(
+        // Single transition for all words
+        wordElements
+          .merge(enterWords)
+          .style("fill", getWordColor)
+          .transition()
+          .duration(TRANSITION_DURATION)
+          .style("opacity", 1)
+          .style("font-size", (d) => `${d.size}px`)
+          .style("font-family", fontFamily)
+          .attr(
+            "transform",
+            (d) => `translate(${d.x},${d.y}) rotate(${d.rotate})`
+          );
+
+        // Add interaction handlers
+        wordElements
+          .merge(enterWords)
+          .on("click", (event, d) => {
+            if (d.originalData) {
+              onWordSelect(d.originalData);
+            }
+          })
+          .on("mouseover", function () {
+            d3.select(this).transition().duration(200).style("opacity", 0.7);
+          })
+          .on("mouseout", function () {
+            d3.select(this).transition().duration(200).style("opacity", 1);
+          });
+
+        // Ensure words are centered in the SVG
+        const svgWidth = parseInt(svg.style("width"));
+        const svgHeight = parseInt(svg.style("height"));
+        wordsGroup.attr(
           "transform",
-          (d) => `translate(${d.x},${d.y}) rotate(${d.rotate})`
+          `translate(${svgWidth / 2},${svgHeight / 2})`
         );
 
-      // Add interaction handlers
-      wordElements
-        .merge(enterWords)
-        .on("click", (event, d) => {
-          if (d.originalData) {
-            onWordSelect(d.originalData);
-          }
-        })
-        .on("mouseover", function () {
-          d3.select(this).transition().duration(200).style("opacity", 0.7);
-        })
-        .on("mouseout", function () {
-          d3.select(this).transition().duration(200).style("opacity", 1);
-        });
+        // Save previous words state
+        previousWordsRef.current = cloudWords;
 
-      // Ensure words are centered in the SVG
-      const svgWidth = parseInt(svg.style("width"));
-      const svgHeight = parseInt(svg.style("height"));
-      wordsGroup.attr(
-        "transform",
-        `translate(${svgWidth / 2},${svgHeight / 2})`
-      );
-
-      setIsUpdating(false);
-
-      // Save previous words state
-      previousWordsRef.current = cloudWords;
-
-      // Reset zoom to identity transform
-      if (zoomRef.current && typeof window !== "undefined") {
-        // Small delay to ensure words are properly positioned
-        setTimeout(() => {
-          // Apply zoom transform with proper centering
-          const width = parseInt(svg.style("width"));
-          const height = parseInt(svg.style("height"));
-          svg.call(zoomRef.current!.transform, d3.zoomIdentity.translate(width/2, height/2).scale(0.87).translate(-width/2, -height/2));
-        }, 100);
+        // Reset zoom to identity transform
+        if (zoomRef.current && typeof window !== "undefined") {
+          // Small delay to ensure words are properly positioned
+          setTimeout(() => {
+            // Apply zoom transform with proper centering
+            const width = parseInt(svg.style("width"));
+            const height = parseInt(svg.style("height"));
+            svg.call(zoomRef.current!.transform, d3.zoomIdentity.translate(width/2, height/2).scale(0.87).translate(-width/2, -height/2));
+          }, 100);
+        }
+      } finally {
+        // Always reset these flags no matter what happens
+        setIsUpdating(false);
+        renderInProgressRef.current = false;
       }
     }, DEBOUNCE_DELAY),
-    [createWordCloudLayout, getWordColor, fontFamily, onWordSelect]
+    [createWordCloudLayout, getWordColor, fontFamily, dimensions, onWordSelect]
   );
 
   // Initialize SVG with responsive container
@@ -632,67 +739,6 @@ export const useWordCloudVisualization = ({
       debouncedUpdate(words);
     }
   }, [dimensions, words, debouncedUpdate]);
-
-  // Update word cloud when filtered words change
-  useEffect(() => {
-    // Skip updates while loading
-    if (isLoading || words.length === 0) {
-      console.log("Visualization update skipped: loading or no words");
-      return;
-    }
-
-    // Skip updates if any modal is open
-    if (modalsOpenRef.current) {
-      console.log("Visualization update skipped: modal is open");
-      return;
-    }
-
-    // Check if shouldUpdateLayout flag is set
-    const shouldUpdate = shouldUpdateLayoutRef.current;
-    
-    console.log("Word cloud visualization update triggered:", { 
-      wordCount: words.length, 
-      shouldUpdateLayout: shouldUpdate,
-      isWordSelection: isWordSelectionActionRef.current
-    });
-
-    // Always update on shouldUpdateLayout
-    if (shouldUpdate) {
-      console.log("Full layout update requested");
-      shouldUpdateLayoutRef.current = false; // Reset the flag after use
-      debouncedUpdate(words);
-      return;
-    }
-
-    // Skip updates when panel visibility changes or a word is selected/deselected
-    // BUT don't skip if it's a slider change (which should always update)
-    if (
-      (selectedWordRef.current !== null || isWordSelectionActionRef.current) &&
-      !shouldUpdate
-    ) {
-      console.log("Skipping layout update due to panel/word selection changes");
-      return;
-    }
-
-    console.log("Standard visualization update");
-    debouncedUpdate(words);
-  }, [words, isLoading, debouncedUpdate]);
-
-  // Force initial render after data is loaded
-  useEffect(() => {
-    // Only execute this when loading completes and we have data
-    if (!isLoading && words.length > 0 && svgRef.current) {
-      console.log("Triggering initial word cloud render");
-      shouldUpdateLayoutRef.current = true;
-
-      // Give time for the SVG to initialize
-      const timer = setTimeout(() => {
-        debouncedUpdate(words);
-      }, 500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, words, debouncedUpdate]);
 
   // Monitor panel visibility changes and recenter visualization when needed
   useEffect(() => {
