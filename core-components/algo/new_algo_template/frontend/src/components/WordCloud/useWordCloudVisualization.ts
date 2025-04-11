@@ -507,6 +507,11 @@ export const useWordCloudVisualization = ({
         .attr("class", "zoom-controls")
         .attr("transform", `translate(20, ${height - 130})`);
 
+      // Ensure zoom controls are always visible by adjusting position for smaller heights
+      if (height < 200) {
+        zoomControls.attr("transform", `translate(20, 20)`);
+      }
+
       // Add transparent background to controls
       zoomControls
         .append("rect")
@@ -668,10 +673,26 @@ export const useWordCloudVisualization = ({
         `translate(${svgWidth / 2},${svgHeight / 2})`
       );
 
-      // Update zoom controls position
+      // Update zoom controls position with better boundary handling
+      const zoomControlsHeight = 120; // Height of the zoom controls
+      const padding = 20; // Padding from edges
+      
+      // Calculate position to ensure controls are fully visible
+      let yPosition;
+      if (svgHeight < 200) {
+        // For very small heights, position at top
+        yPosition = padding;
+      } else if (svgHeight < zoomControlsHeight + (padding * 2)) {
+        // For heights that can't fit controls with padding at bottom
+        yPosition = (svgHeight - zoomControlsHeight) / 2; // Center vertically
+      } else {
+        // Default position (bottom with padding)
+        yPosition = svgHeight - zoomControlsHeight - padding;
+      }
+      
       svg
         .select(".zoom-controls")
-        .attr("transform", `translate(20, ${svgHeight - 130})`);
+        .attr("transform", `translate(${padding}, ${yPosition})`);
     });
 
     if (svgRef.current) {
