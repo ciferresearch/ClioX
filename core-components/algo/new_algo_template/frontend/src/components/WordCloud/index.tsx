@@ -218,13 +218,22 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
   useEffect(() => {
     // Skip updates while loading
     if (isLoading) {
+      console.log("Skipping update: WordCloud is still loading");
       return;
     }
 
     // Skip updates if any modal is open
     if (modalsOpenRef.current) {
+      console.log("Skipping update: Modal is open");
       return;
     }
+
+    // Log filtering information to help with debugging
+    console.log("FilteredWords changed:", {
+      count: filteredWords.length,
+      shouldUpdateLayout,
+      isWordSelectionAction
+    });
 
     // When a word is selected or panel is closed:
     // - Both are marked as isWordSelectionAction = true in the store
@@ -232,6 +241,16 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
     // - The debouncedUpdate function will handle this correctly
     if (isWordSelectionAction) {
       console.log("Panel state change detected (open/close), allowing update with isWordSelectionAction flag");
+      debouncedUpdate(filteredWords);
+      return;
+    }
+    
+    // For updates triggered by filter changes (stoplist/whitelist toggle)
+    // We want to ensure the layout is always updated
+    if (shouldUpdateLayout) {
+      console.log("Layout update required - triggering full re-render");
+      // Ensure the ref is updated immediately
+      shouldUpdateLayoutRef.current = true;
       debouncedUpdate(filteredWords);
       return;
     }
@@ -243,7 +262,8 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
     filteredWords, 
     isLoading, 
     modalsOpenRef, 
-    isWordSelectionAction, 
+    isWordSelectionAction,
+    shouldUpdateLayout, 
     debouncedUpdate
   ]);
 

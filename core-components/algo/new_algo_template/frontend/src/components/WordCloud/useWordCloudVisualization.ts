@@ -583,33 +583,85 @@ export const useWordCloudVisualization = ({
     }
   }, []);
 
+  // Update SVG when dimensions change
+  useEffect(() => {
+    // Skip if no SVG ref available
+    if (!svgRef.current) return;
+
+    // Skip if dimensions haven't changed substantially
+    if (
+      dimensionsRef.current.width === dimensions.width &&
+      dimensionsRef.current.height === dimensions.height
+    ) {
+      return;
+    }
+
+    console.log(`Dimensions updated to ${dimensions.width}x${dimensions.height}, adjusting SVG`);
+
+    // Update the SVG dimensions
+    const svg = d3.select(svgRef.current);
+    svg
+      .attr("width", dimensions.width)
+      .attr("height", dimensions.height)
+      .style("width", `${dimensions.width}px`)
+      .style("height", `${dimensions.height}px`);
+
+    // Update dimensions ref
+    dimensionsRef.current = {
+      width: dimensions.width,
+      height: dimensions.height,
+      lastUpdate: Date.now(),
+    };
+
+    // Force layout update if we have words
+    if (words.length > 0 && !modalsOpenRef.current) {
+      shouldUpdateLayoutRef.current = true;
+      debouncedUpdate(words);
+    }
+  }, [dimensions, words, debouncedUpdate]);
+
   // Update word cloud when filtered words change
   useEffect(() => {
     // Skip updates while loading
     if (isLoading || words.length === 0) {
+      console.log("Visualization update skipped: loading or no words");
       return;
     }
 
     // Skip updates if any modal is open
     if (modalsOpenRef.current) {
+      console.log("Visualization update skipped: modal is open");
       return;
     }
 
-    // Always update on slider changes or search term changes
-    const isSliderChange = shouldUpdateLayoutRef.current === true;
+    // Check if shouldUpdateLayout flag is set
+    const shouldUpdate = shouldUpdateLayoutRef.current;
+    
+    console.log("Word cloud visualization update triggered:", { 
+      wordCount: words.length, 
+      shouldUpdateLayout: shouldUpdate,
+      isWordSelection: isWordSelectionActionRef.current
+    });
+
+    // Always update on shouldUpdateLayout
+    if (shouldUpdate) {
+      console.log("Full layout update requested");
+      shouldUpdateLayoutRef.current = false; // Reset the flag after use
+      debouncedUpdate(words);
+      return;
+    }
 
     // Skip updates when panel visibility changes or a word is selected/deselected
     // BUT don't skip if it's a slider change (which should always update)
     if (
-      (selectedWordRef.current !== null || !shouldUpdateLayoutRef.current) &&
-      !isSliderChange
+      (selectedWordRef.current !== null || isWordSelectionActionRef.current) &&
+      !shouldUpdate
     ) {
-      console.log("Skipping layout update due to panel change or word selection");
+      console.log("Skipping layout update due to panel/word selection changes");
       return;
     }
 
-    console.log("Updating layout");
-    shouldUpdateLayoutRef.current = false;
+    console.log("Standard visualization update");
     debouncedUpdate(words);
   }, [words, isLoading, debouncedUpdate]);
 

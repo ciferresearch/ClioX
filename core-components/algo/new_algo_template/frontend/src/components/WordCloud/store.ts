@@ -444,21 +444,21 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       // Save current search term to reapply it
       const currentSearchTerm = searchTerm;
       
-      // Force update after modal closes
-      setTimeout(() => {
-        // Temporarily clear search term to ensure whitelist filter is applied
-        if (currentSearchTerm) {
-          set({ searchTerm: '' });
-          
-          // Then reapply the search term after a brief delay
-          setTimeout(() => {
-            set({ searchTerm: currentSearchTerm });
-            get().filterWords();
-          }, 100);
-        } else {
-          get().filterWords();
-        }
-      }, 100); // Increased delay to ensure panel closes first
+      // Handle search term separately if needed
+      if (currentSearchTerm) {
+        // Temporarily clear search term
+        set({ searchTerm: '' });
+        
+        // Wait a tiny amount of time and reapply search term
+        // This helps ensure the whitelist filter is properly applied first
+        setTimeout(() => {
+          set({ searchTerm: currentSearchTerm });
+          get().filterWords(); // Update filtered words after search term is reapplied
+        }, 10);
+      } else {
+        // If no search term, apply filtering immediately
+        get().filterWords();
+      }
     } else {
       // Just close the modal without changes
       set({ 
@@ -489,13 +489,12 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     // Save to localStorage
     localStorage.setItem(STORAGE_KEYS.LANGUAGE, language);
     
-    // Update filters after language change
-    setTimeout(() => {
-      get().filterWords();
-    }, 50); // Increased delay to ensure panel closes first
+    // Update filters immediately without setTimeout
+    get().filterWords();
   },
   
   toggleStoplist: () => {
+    // Get current state
     const { stoplistActive, selectedWord } = get();
     
     // Close the panel first if it's open
@@ -506,27 +505,28 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       });
     }
     
+    // Calculate new value
     const newValue = !stoplistActive;
     
-    // Short delay to ensure panel closes first
-    setTimeout(() => {
-      set({
-        stoplistActive: newValue,
-        shouldUpdateLayout: true,
-        isWordSelectionAction: false, // Ensure this is not treated as a word selection
-      });
-      
-      // Save to localStorage
-      localStorage.setItem(STORAGE_KEYS.STOPLIST_ACTIVE, String(newValue));
-      
-      // Update filters after toggle
-      setTimeout(() => {
-        get().filterWords();
-      }, 50);
-    }, 50);
+    // Update state directly without nested setTimeout
+    // This ensures that state changes are immediately applied
+    set({
+      stoplistActive: newValue,
+      shouldUpdateLayout: true,  // Force layout update to ensure rerendering
+      isWordSelectionAction: false, // Ensure this is not treated as a word selection
+      modalsOpen: false, // Ensure modals aren't blocking filter updates
+    });
+    
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEYS.STOPLIST_ACTIVE, String(newValue));
+    
+    // Apply filtering immediately
+    // This direct call ensures that filteredWords is updated right after state change
+    get().filterWords();
   },
   
   toggleWhitelist: () => {
+    // Get current state
     const { whitelistActive, customWhitelist, searchTerm, selectedWord } = get();
     
     // Close the panel first if it's open
@@ -537,36 +537,36 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       });
     }
     
+    // Calculate new value
     const newWhitelistActive = !whitelistActive;
     
-    // Toggle whitelist status
+    // Update state directly without nested setTimeout
+    // This ensures state changes are immediately applied
     set({
       whitelistActive: newWhitelistActive,
-      shouldUpdateLayout: true,
-      isWordSelectionAction: false // Ensure this is not treated as a word selection
+      shouldUpdateLayout: true, // Force layout update to ensure rerendering
+      isWordSelectionAction: false, // Ensure this is not treated as a word selection
+      modalsOpen: false, // Ensure modals aren't blocking filter updates
     });
     
     // Save to localStorage
     localStorage.setItem(STORAGE_KEYS.WHITELIST_ACTIVE, newWhitelistActive ? 'true' : 'false');
     
-    // Save current search term to reapply it
-    const currentSearchTerm = searchTerm;
-    
-    // Force update after a brief delay
-    setTimeout(() => {
-      // Temporarily clear search term to ensure whitelist filter is applied
-      if (currentSearchTerm) {
-        set({ searchTerm: '' });
-        
-        // Then reapply the search term after a brief delay
-        setTimeout(() => {
-          set({ searchTerm: currentSearchTerm });
-          get().filterWords();
-        }, 100);
-      } else {
-        get().filterWords();
-      }
-    }, 100); // Increased delay to ensure panel closes first
+    // Handle search term separately if needed
+    if (searchTerm) {
+      // Temporarily clear search term
+      set({ searchTerm: '' });
+      
+      // Wait a tiny amount of time and reapply search term
+      // This helps ensure the whitelist filter is properly applied first
+      setTimeout(() => {
+        set({ searchTerm: searchTerm });
+        get().filterWords(); // Update filtered words after search term is reapplied
+      }, 10);
+    } else {
+      // If no search term, apply filtering immediately
+      get().filterWords();
+    }
   },
   
   // Utility actions
@@ -629,11 +629,24 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       minFrequency, 
       maxWords,
       modalsOpen,
-      isWordSelectionAction // Get the word selection action flag
+      isWordSelectionAction, // Get the word selection action flag
+      stoplistActive,
+      whitelistActive
     } = get();
     
     // Skip filtering if modals are open
-    if (modalsOpen) return;
+    if (modalsOpen) {
+      console.log('Filtering skipped: modals are open');
+      return;
+    }
+    
+    console.log('Applying filters with conditions:', { 
+      searchTerm, 
+      stoplistActive, 
+      whitelistActive,
+      minFrequency, 
+      maxWords 
+    });
     
     let filtered = [...words];
     
@@ -643,24 +656,27 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       filtered = filtered.filter((word) =>
         word.value.toLowerCase().includes(searchTermLower)
       );
+      console.log(`Search filter applied: ${filtered.length} words remaining`);
     }
     
     // Apply stopwords filter using Sets for better performance
     const stopwords = get().getActiveStopwords();
-    if (stopwords.length > 0) {
+    if (stoplistActive && stopwords.length > 0) {
       const stopwordsSet = new Set(stopwords.map(word => word.toLowerCase()));
       filtered = filtered.filter(
         (word) => !stopwordsSet.has(word.value.toLowerCase())
       );
+      console.log(`Stopwords filter applied: ${filtered.length} words remaining`);
     }
     
     // Apply whitelist filter using Sets for better performance
     const whitelist = get().getActiveWhitelist();
-    if (whitelist.length > 0) {
+    if (whitelistActive && whitelist.length > 0) {
       const whitelistSet = new Set(whitelist.map(word => word.toLowerCase()));
       filtered = filtered.filter((word) =>
         whitelistSet.has(word.value.toLowerCase())
       );
+      console.log(`Whitelist filter applied: ${filtered.length} words remaining`);
     }
     
     // Apply frequency filter and limit to max words
@@ -669,22 +685,24 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       .sort((a, b) => b.count - a.count)
       .slice(0, maxWords);
     
-    // Calculate if layout update is needed
-    // If this was a word selection action, we want to avoid layout updates
-    // except for transitions between having words and not having words
-    const hadWords = get().filteredWords.length > 0;
-    const hasWords = filtered.length > 0;
+    // Always check if the filtered results actually changed
+    const currentFiltered = get().filteredWords;
+    const filtersChanged = JSON.stringify(currentFiltered) !== JSON.stringify(filtered);
     
-    // Force update only when transitioning between having/not having words
-    // AND it's not a word selection action
-    const needsForceUpdate = (hadWords !== hasWords) && !isWordSelectionAction;
+    // Always force layout update when filters change, unless it's a word selection action
+    // This ensures that changes to stoplist/whitelist always trigger a re-render
+    const shouldForceUpdate = filtersChanged && !isWordSelectionAction;
     
+    console.log(`Filter results: ${filtered.length} words after filtering, layout update: ${shouldForceUpdate}`);
+    
+    // Update state with new filtered words and layout update flag
     set({ 
       filteredWords: filtered,
-      // Only update layout if needed and not a word selection action
-      shouldUpdateLayout: isWordSelectionAction ? false : 
-                          needsForceUpdate ? true : get().shouldUpdateLayout
+      shouldUpdateLayout: shouldForceUpdate ? true : get().shouldUpdateLayout
     });
+    
+    // Return the filtered words (useful for chaining operations)
+    return filtered;
   },
   
   // Auto-detect stopwords based on word frequencies
