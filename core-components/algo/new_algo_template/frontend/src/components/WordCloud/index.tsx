@@ -366,8 +366,8 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
             type="text"
             value={searchTerm}
             onChange={(e) => {
-              if (e.target.value === '') {
-                setSearchTerm('');
+              if (e.target.value === "") {
+                setSearchTerm("");
               } else {
                 setSearchTerm(e.target.value);
               }
@@ -379,10 +379,11 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
 
         <div className="flex flex-col">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Minimum frequency: {typeof window !== 'undefined' ? minFrequency : ''}
+            Minimum frequency:{" "}
+            {typeof window !== "undefined" ? minFrequency : ""}
           </label>
           <div className="flex items-center h-10">
-            {typeof window !== 'undefined' && (
+            {typeof window !== "undefined" && (
               <input
                 type="range"
                 min={minCount}
@@ -400,16 +401,20 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
 
         <div className="flex flex-col">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Max words: {typeof window !== 'undefined' ? maxWords : ''}
+            Max words to display:{" "}
+            {typeof window !== "undefined" ? maxWords : ""}
           </label>
           <div className="flex items-center h-10">
-            {typeof window !== 'undefined' && (
+            {typeof window !== "undefined" && (
               <input
                 type="range"
                 min={10}
-                max={300}
+                // Calculate a reasonable maximum: either 500 or double the total words count, whichever is smaller
+                max={words.length}
                 value={maxWords}
                 onChange={(e) => {
+                  // Update max words in store when slider changes
+                  // This will automatically save to localStorage via the store action
                   setMaxWords(Number(e.target.value));
                 }}
                 className="w-full"
@@ -421,16 +426,14 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
 
       <div className="flex flex-col md:flex-row gap-4">
         {/* Main container - using CSS Grid for smoother transitions */}
-        <div 
+        <div
           className={`grid transition-all duration-300 ease-in-out gap-4 ${
-            isPanelVisible ? 'grid-cols-[1fr_auto]' : 'grid-cols-[1fr]'
+            isPanelVisible ? "grid-cols-[1fr_auto]" : "grid-cols-[1fr]"
           }`}
-          style={{ width: '100%' }}
+          style={{ width: "100%" }}
         >
           {/* Word cloud visualization - will automatically adjust with CSS Grid */}
-          <div
-            className="h-[550px] bg-gray-50 rounded flex items-center justify-center p-4 overflow-hidden relative wordcloud-container"
-          >
+          <div className="h-[550px] bg-gray-50 rounded flex items-center justify-center p-4 overflow-hidden relative wordcloud-container">
             {isLoading && (
               <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
                 <div className="flex items-center space-x-2">
@@ -439,12 +442,9 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
                 </div>
               </div>
             )}
-            
+
             {error ? (
-              <ChartError 
-                message={error} 
-                onRetry={fetchData}
-              />
+              <ChartError message={error} onRetry={fetchData} />
             ) : isUpdating ? (
               <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
                 <div className="flex items-center space-x-2">
@@ -465,7 +465,7 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
                 className={isUpdating ? "opacity-50" : "opacity-100"}
               />
             )}
-            
+
             <style jsx>{`
               .wordcloud-container svg:active {
                 cursor: grabbing;
@@ -493,15 +493,20 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
       <div className="mt-4 p-3 bg-gray-50 rounded text-sm text-gray-600">
         <div className="flex flex-wrap gap-2 justify-between items-center">
           <div>
-            {typeof window !== 'undefined' ? (
+            {typeof window !== "undefined" ? (
               <>
                 Showing {filteredWords.length} of {words.length} words.
                 {filteredWords.length > 0 && (
                   <span>
                     {" "}
-                    Frequency range: {Math.min(
+                    Frequency range:{" "}
+                    {Math.min(
                       ...filteredWords.map((w: { count: number }) => w.count)
-                    )} to {Math.max(...filteredWords.map((w: { count: number }) => w.count))}
+                    )}{" "}
+                    to{" "}
+                    {Math.max(
+                      ...filteredWords.map((w: { count: number }) => w.count)
+                    )}
                   </span>
                 )}
               </>
@@ -509,14 +514,16 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
               <>Loading word statistics...</>
             )}
           </div>
-          
+
           <div className="flex items-center gap-4 text-xs">
             {stoplistActive ? (
               <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full">
-                {selectedLanguage === 'custom' ? 'Custom Stopwords' : `${selectedLanguage} Stopwords`}
+                {selectedLanguage === "custom"
+                  ? "Custom Stopwords"
+                  : `${selectedLanguage} Stopwords`}
               </span>
             ) : null}
-            
+
             {whitelistActive ? (
               <span className="px-2 py-1 bg-green-50 text-green-700 rounded-full">
                 Whitelist Active
@@ -539,7 +546,6 @@ const WordCloud = ({ skipLoading = false }: WordCloudProps) => {
         }}
         onClose={closeOptionsModal}
         onSave={saveOptions}
-        
         // Stoplist/Whitelist related props
         selectedLanguage={selectedLanguage}
         stoplistActive={stoplistActive}

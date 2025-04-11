@@ -110,7 +110,7 @@ const STORAGE_KEYS = {
   WHITELIST: 'wordcloud_whitelist',
   WHITELIST_ACTIVE: 'wordcloud_whitelist_active',
   MIN_FREQUENCY: 'wordcloud_min_frequency',
-  MAX_WORDS: 'wordcloud_max_words',
+  MAX_WORDS: 'wordcloud_max_words', // Controls the maximum number of words displayed in the visualization
 };
 
 // Helper function to safely parse JSON from localStorage
@@ -135,6 +135,7 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
   
   searchTerm: "",
   minFrequency: typeof window !== 'undefined' ? Number(localStorage.getItem(STORAGE_KEYS.MIN_FREQUENCY) || 0) : 0,
+  // Default to 100 words and load from localStorage if available
   maxWords: typeof window !== 'undefined' ? Number(localStorage.getItem(STORAGE_KEYS.MAX_WORDS) || 100) : 100,
   dimensions: { width: 800, height: 500 },
   
@@ -199,7 +200,7 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     set({ 
       minFrequency,
       shouldUpdateLayout: true,
-      isWordSelectionAction: false // Not a word selection action
+      isWordSelectionAction: false
     });
     
     // Save to localStorage
@@ -207,7 +208,6 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       localStorage.setItem(STORAGE_KEYS.MIN_FREQUENCY, minFrequency.toString());
     }
     
-    // After setting min frequency, filter words
     setTimeout(() => {
       get().filterWords();
     }, 0);
@@ -216,7 +216,7 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     set({ 
       maxWords,
       shouldUpdateLayout: true,
-      isWordSelectionAction: false // Not a word selection action
+      isWordSelectionAction: false
     });
     
     // Save to localStorage
@@ -224,7 +224,6 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
       localStorage.setItem(STORAGE_KEYS.MAX_WORDS, maxWords.toString());
     }
     
-    // After setting max words, filter words
     setTimeout(() => {
       get().filterWords();
     }, 0);
