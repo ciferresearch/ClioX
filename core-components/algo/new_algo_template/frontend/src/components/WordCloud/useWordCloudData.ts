@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { WordData } from './types';
+import { useDataStore } from '@/store/dataStore';
 
 export const useWordCloudData = () => {
   const [words, setWords] = useState<WordData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { fetchWordCloudData } = useDataStore();
 
   // Define fetchData as a component method for reuse
   const fetchData = useCallback(async () => {
@@ -12,20 +14,7 @@ export const useWordCloudData = () => {
       setIsLoading(true);
       setError(null);
       
-      // const response = await fetch('http://localhost:5001/api/wordcloud');
-      
-      // TODO: Remove this once we have a real endpoint
-      const response = await fetch("/data/temp/processed_wordcloud.json");
-      
-      if (response.status === 503) {
-        throw new Error('Data is being processed. Please try again in a moment.');
-      }
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load word cloud data: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await fetchWordCloudData();
       setWords(data.wordCloudData);
     } catch (error) {
       console.error('Error fetching word cloud data:', error);
@@ -33,7 +22,7 @@ export const useWordCloudData = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchWordCloudData]);
 
   // Fetch data only once on initial load
   useEffect(() => {

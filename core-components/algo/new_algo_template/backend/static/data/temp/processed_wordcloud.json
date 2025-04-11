@@ -2,35 +2,35 @@
   "wordCloudData": [
     {
       "value": "ect",
-      "count": 1434
+      "count": 1387
     },
     {
       "value": "enron",
-      "count": 723
+      "count": 716
     },
     {
       "value": "would",
       "count": 466
     },
     {
-      "value": "forwarded",
-      "count": 413
-    },
-    {
-      "value": "please",
-      "count": 411
+      "value": "subject",
+      "count": 436
     },
     {
       "value": "cc",
-      "count": 408
+      "count": 419
+    },
+    {
+      "value": "forwarded",
+      "count": 419
+    },
+    {
+      "value": "please",
+      "count": 406
     },
     {
       "value": "gas",
-      "count": 385
-    },
-    {
-      "value": "subject",
-      "count": 375
+      "count": 396
     },
     {
       "value": "power",
@@ -46,31 +46,35 @@
     },
     {
       "value": "ees",
-      "count": 232
+      "count": 228
     },
     {
       "value": "call",
-      "count": 218
+      "count": 217
     },
     {
       "value": "new",
-      "count": 209
+      "count": 211
     },
     {
       "value": "project",
       "count": 203
     },
     {
-      "value": "time",
-      "count": 193
+      "value": "meeting",
+      "count": 200
+    },
+    {
+      "value": "enronxgate",
+      "count": 197
     },
     {
       "value": "loan",
-      "count": 191
+      "count": 190
     },
     {
-      "value": "meeting",
-      "count": 182
+      "value": "time",
+      "count": 187
     },
     {
       "value": "know",
@@ -82,7 +86,7 @@
     },
     {
       "value": "market",
-      "count": 177
+      "count": 178
     },
     {
       "value": "like",
@@ -91,14 +95,6 @@
     {
       "value": "image",
       "count": 175
-    },
-    {
-      "value": "enronxgate",
-      "count": 173
-    },
-    {
-      "value": "pm",
-      "count": 170
     },
     {
       "value": "price",
@@ -114,7 +110,7 @@
     },
     {
       "value": "prices",
-      "count": 146
+      "count": 145
     },
     {
       "value": "work",
@@ -126,7 +122,7 @@
     },
     {
       "value": "use",
-      "count": 139
+      "count": 141
     },
     {
       "value": "let",
@@ -165,6 +161,10 @@
       "count": 122
     },
     {
+      "value": "sent",
+      "count": 121
+    },
+    {
       "value": "questions",
       "count": 120
     },
@@ -178,11 +178,7 @@
     },
     {
       "value": "thanks",
-      "count": 115
-    },
-    {
-      "value": "sent",
-      "count": 114
+      "count": 117
     },
     {
       "value": "think",
@@ -198,7 +194,7 @@
     },
     {
       "value": "may",
-      "count": 105
+      "count": 108
     },
     {
       "value": "thank",
@@ -233,10 +229,6 @@
       "count": 98
     },
     {
-      "value": "good",
-      "count": 98
-    },
-    {
       "value": "back",
       "count": 98
     },
@@ -249,16 +241,16 @@
       "count": 96
     },
     {
-      "value": "desk",
+      "value": "good",
+      "count": 96
+    },
+    {
+      "value": "west",
       "count": 96
     },
     {
       "value": "still",
       "count": 95
-    },
-    {
-      "value": "trading",
-      "count": 94
     },
     {
       "value": "per",
@@ -269,11 +261,11 @@
       "count": 93
     },
     {
-      "value": "west",
+      "value": "trading",
       "count": 93
     },
     {
-      "value": "cash",
+      "value": "desk",
       "count": 93
     },
     {
@@ -285,8 +277,12 @@
       "count": 92
     },
     {
+      "value": "cash",
+      "count": 92
+    },
+    {
       "value": "date",
-      "count": 90
+      "count": 91
     },
     {
       "value": "send",
@@ -301,10 +297,6 @@
       "count": 88
     },
     {
-      "value": "free",
-      "count": 87
-    },
-    {
       "value": "yes",
       "count": 87
     },
@@ -314,6 +306,10 @@
     },
     {
       "value": "forward",
+      "count": 86
+    },
+    {
+      "value": "free",
       "count": 86
     },
     {
@@ -346,7 +342,7 @@
     },
     {
       "value": "us",
-      "count": 79
+      "count": 78
     },
     {
       "value": "file",
@@ -369,15 +365,15 @@
       "count": 75
     },
     {
+      "value": "since",
+      "count": 75
+    },
+    {
       "value": "property",
       "count": 73
     },
     {
       "value": "find",
-      "count": 73
-    },
-    {
-      "value": "since",
       "count": 73
     },
     {
@@ -391,6 +387,10 @@
     {
       "value": "index",
       "count": 72
+    },
+    {
+      "value": "regarding",
+      "count": 71
     },
     {
       "value": "trades",
