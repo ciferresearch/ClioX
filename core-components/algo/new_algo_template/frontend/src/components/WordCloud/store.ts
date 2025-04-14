@@ -469,7 +469,9 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
         shouldUpdateLayout: true,
         isWhitelistModalOpen: false,
         modalsOpen: false,
-        isWordSelectionAction: false // Ensure this is not treated as a word selection
+        isWordSelectionAction: false, // Ensure this is not treated as a word selection
+        // Force a complete refiltering by invalidating the cache
+        filterCacheKey: String(Date.now())
       });
       
       // Save to localStorage
@@ -586,6 +588,12 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     
     // Save to localStorage
     localStorage.setItem(STORAGE_KEYS.WHITELIST_ACTIVE, newWhitelistActive ? 'true' : 'false');
+    
+    // Always force filteredWords to be recomputed completely
+    // This ensures the visualization updates properly when no words match the whitelist
+    set({
+      filterCacheKey: String(Date.now()) // Invalidate filter cache
+    });
     
     // Handle search term separately if needed
     if (searchTerm) {
@@ -725,9 +733,17 @@ export const useWordCloudStore = create<WordCloudStore>((set, get) => ({
     
     // Apply whitelist if active
     if (state.whitelistActive && whitelist.length > 0) {
-      filtered = filtered.filter((word) => 
+      const whitelistFiltered = filtered.filter((word) => 
         whitelist.includes(word.value.toLowerCase())
       );
+      
+      // If whitelist is active but no words match, we should show an empty set
+      filtered = whitelistFiltered;
+      
+      // Force a layout update if filtering resulted in empty set
+      if (filtered.length === 0) {
+        set({ shouldUpdateLayout: true });
+      }
     }
     
     // Apply stoplist if active

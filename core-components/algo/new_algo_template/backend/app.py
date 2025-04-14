@@ -10,6 +10,8 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from collections import Counter
+import nltk
+from nltk.tokenize import sent_tokenize
 
 # Import utility functions
 from utils.text_processing import extract, cleansing
@@ -375,7 +377,16 @@ def get_document_summary():
         vocabulary_density = unique_words / total_words if total_words > 0 else 0
         
         # Calculate readability (simple implementation)
-        total_sentences = df['clean_text'].str.count('[.!?]+').sum()
+        # Ensure NLTK data is downloaded
+        try:
+            nltk.data.find('tokenizers/punkt')
+        except LookupError:
+            print("Downloading NLTK punkt data...")
+            nltk.download('punkt')
+        
+        # Count sentences from masked_text
+        all_text = ' '.join(df['masked_text'].dropna().astype(str))
+        total_sentences = len(sent_tokenize(all_text))
         words_per_sentence = total_words / total_sentences if total_sentences > 0 else 0
         avg_word_length = sum(len(word) for word in all_words) / len(all_words) if all_words else 0
         readability_index = 0.4 * (words_per_sentence + 100 * (len([w for w in all_words if len(w) > 6]) / total_words))
