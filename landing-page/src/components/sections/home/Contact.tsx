@@ -2,7 +2,7 @@
 import { useState, FormEvent } from 'react';
 import Container from '@/components/layout/Container';
 import Button from '@/components/common/Button';
-
+import { DisplayLarge, DisplayMedium, BodyText } from '@/components/common/Typography';
 interface FormData {
   name: string;
   email: string;
@@ -53,13 +53,13 @@ export default function ContactAndOnboarding() {
           <div className="flex flex-col md:col-span-2 justify-self-start">
             {/* Contact Header */}
             <div className="mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              <DisplayLarge align="left" className="mb-6">
                 Let's stay in touch.
-              </h2>
-              <p className="text-xl text-gray-600 leading-relaxed max-w-2xl">
+              </DisplayLarge>
+              <BodyText align="left">
                 Have questions about ClioX? We'd love to hear from you. Send us
                 a message or reach out through any of the channels below.
-              </p>
+              </BodyText>
             </div>
 
             {/* Contact Details */}

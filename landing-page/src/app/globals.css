@@ -8,6 +8,22 @@
   --foreground: #000000CC;
 }
 
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optional: Add offset for fixed header */
+html {
+  scroll-padding-top: 80px; /* Adjust this value based on your header height */
+}
+
 @theme {
   --font-sans: "IBM Plex Sans", sans-serif;
   --font-serif: "Libre Baskerville", serif;
@@ -26,19 +42,4 @@
     --background: #0a0a0a;
     --foreground: #ededed;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-/* Optional: Add offset for fixed header */
-html {
-  scroll-padding-top: 80px; /* Adjust this value based on your header height */
 }

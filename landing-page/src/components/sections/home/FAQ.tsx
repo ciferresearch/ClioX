@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Container from '@/components/layout/Container';
-
+import { DisplayLarge, DisplayMedium, BodyText } from '@/components/common/Typography';
 interface FAQItem {
   question: string;
   answer: string;
@@ -11,12 +11,14 @@ interface FAQItem {
 
 const faqData: FAQItem[] = [
   {
-    question: 'What is Web3?',
-    answer: 'Web3 is the next generation of the internet, built on blockchain technology, where users have control over their data and content. Think of it like the difference between renting a house (Web2) and owning it (Web3). While Web2 platforms control your data and content, Web3 gives you the keys to your digital life—offering more privacy, transparency, and autonomy online.',
+    question: "What is Web3?",
+    answer:
+      "Web3 is the next generation of the internet, built on blockchain technology, where users have control over their data and content. Think of it like the difference between renting a house (Web2) and owning it (Web3). While Web2 platforms control your data and content, Web3 gives you the keys to your digital life—offering more privacy, transparency, and autonomy online.",
   },
   {
-    question: 'What is Compute-to-Data?',
-    answer: 'Compute-to-Data is a privacy-first approach where computing tasks go to the data—not the other way around. Instead of moving sensitive data across systems, algorithms are sent to the data\'s location to run computations securely.',
+    question: "What is Compute-to-Data?",
+    answer:
+      "Compute-to-Data is a privacy-first approach where computing tasks go to the data—not the other way around. Instead of moving sensitive data across systems, algorithms are sent to the data's location to run computations securely.",
   },
   // Add more FAQ items here
 ];
@@ -35,7 +37,7 @@ const FAQ = () => {
   return (
     <section className="py-24 bg-white">
       <Container>
-        <h2 className="text-3xl md:text-4xl font-bold mb-16">FAQ</h2>
+        <DisplayLarge align="left" className="mb-5">FAQ</DisplayLarge>
 
         <div className="divide-y divide-gray-200">
         {/* <div> */}
@@ -48,9 +50,9 @@ const FAQ = () => {
                 onClick={() => toggleExpand(index)}
                 className="w-full flex justify-between items-center text-left focus:outline-none group"
               >
-                <h3 className="text-xl md:text-2xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                <DisplayMedium className="group-hover:text-blue-600">
                   {item.question}
-                </h3>
+                </DisplayMedium>
                 <svg
                   className={`w-6 h-6 text-gray-500 transform transition-transform duration-200 ${
                     expandedIndices.includes(index) ? 'rotate-180' : ''
@@ -76,9 +78,9 @@ const FAQ = () => {
                     transition={{ duration: 0.3 }}
                     className="overflow-hidden"
                   >
-                    <p className="mt-6 text-lg md:text-xl text-gray-700 leading-relaxed">
+                    <BodyText align="left" className="mt-12">
                       {item.answer}
-                    </p>
+                    </BodyText>
                   </motion.div>
                 )}
               </AnimatePresence>
