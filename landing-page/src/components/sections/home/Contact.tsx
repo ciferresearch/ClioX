@@ -276,7 +276,7 @@ export default function ContactAndOnboarding() {
                 <textarea
                   id="message"
                   name="message"
-                  rows={7}
+                  rows={8}
                   value={formData.message}
                   onChange={(e) =>
                     setFormData((prev) => ({
