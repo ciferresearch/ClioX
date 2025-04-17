@@ -64,12 +64,12 @@ export default function Header() {
           {/* Desktop Navigation Links - hidden on mobile, centered on desktop */}
           <div className="hidden md:flex flex-grow justify-center">
             <div className="flex space-x-16 md:space-x-24 lg:space-x-30 xl:space-x-36">
-              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 1</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 2</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 3</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 4</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 5</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">LINK 6</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">Catalogue</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">Publish</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">Verify</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">Log</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">Ecosystem</Link>
+              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">Resources</Link>
             </div>
           </div>
           
