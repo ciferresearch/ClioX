@@ -1,4 +1,5 @@
 import React from 'react';
+import { NavText } from './Typography';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline';
@@ -14,24 +15,54 @@ export default function Button({
 }: ButtonProps) {
   const baseClasses = 'inline-block font-semibold rounded transition-colors';
   
-  const variantClasses = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700',
-    secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300',
-    outline: 'border border-blue-600 text-blue-600 hover:bg-blue-50',
+  const getButtonStyle = () => {
+    const baseStyle = {
+      ...(size === 'lg' ? { 
+        width: '204px', 
+        height: '73px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+      } : {})
+    };
+
+    switch(variant) {
+      case 'primary':
+        return {
+          ...baseStyle,
+          backgroundColor: '#282939',
+          color: '#FFFFFF',
+        };
+      case 'secondary':
+        return {
+          ...baseStyle,
+          backgroundColor: '#F2F2F2',
+          color: '#282939',
+        };
+      case 'outline':
+        return {
+          ...baseStyle,
+          border: '1px solid #282939',
+          color: '#282939',
+        };
+      default:
+        return baseStyle;
+    }
   };
   
   const sizeClasses = {
     sm: 'px-3 py-1.5 text-sm',
     md: 'px-4 py-2',
-    lg: 'px-6 py-3 text-lg',
+    lg: '',
   };
   
   return (
     <button
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className || ''}`}
+      className={`${baseClasses} ${sizeClasses[size]} ${className || ''}`}
+      style={getButtonStyle()}
       {...props}
     >
-      {children}
+      <NavText>{children}</NavText>
     </button>
   );
 } 

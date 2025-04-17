@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import MobileNav from './MobileNav';
 import { Bars3Icon } from '@heroicons/react/24/outline';
+import { NavText } from '@/components/common/Typography';
 
 export default function Header() {
   // Use a simple boolean state with a default value
@@ -31,50 +32,73 @@ export default function Header() {
   }, [atTop]);
 
   // Only render dynamic content after mounting
-  // Keep mobile logo position consistent regardless of scroll position
   const logoSize = isMounted && atTop 
-    ? 'w-12 h-12 top-1/2 -translate-y-1/2 md:w-24 md:h-24 md:top-4 md:translate-y-0' 
-    : 'w-12 h-12 top-1/2 -translate-y-1/2 md:w-12 md:h-12';
+    ? 'w-12 h-12 md:w-24 md:h-24' 
+    : 'w-12 h-12 md:w-12 md:h-12';
     
   const textSize = isMounted && atTop 
     ? 'text-[10px] md:text-lg' 
     : 'text-[10px] md:text-sm';
 
+  const headerHeight = isMounted && atTop
+    ? 'h-[102px]'
+    : 'h-20';
+    
+  const logoPosition = isMounted && atTop
+    ? 'absolute bottom-0 translate-y-1/2'
+    : 'relative';
+
   return (
-    <header className="w-full bg-white sticky top-0 z-50 h-20">
-      <div className="container mx-auto h-full">
-        <div className="flex items-center justify-between h-full">
-          {/* Logo container with smooth transition */}
-          <div className="flex items-center w-24 h-10 md:h-14 relative">
-            <Link href="/" aria-label="Go to homepage">
-              <div 
-                className={`bg-gray-100 rounded-full flex items-center justify-center absolute ${
-                  isMounted ? 'transition-all duration-300 ease-in-out' : ''
-                } ${logoSize}`}
-              >
-                <span className={`text-gray-800 font-bold ${
-                  isMounted ? 'transition-all duration-300 ease-in-out' : ''
-                } ${textSize}`}>
-                  LOGO
-                </span>
-              </div>
+    <header className={`w-full bg-white sticky top-0 z-50 ${headerHeight} transition-all duration-300 ease-in-out`}>
+      <div className="h-full px-4 md:px-8 lg:px-12 xl:px-16 grid grid-cols-[1fr_4fr_1fr]">
+        {/* Logo column - right aligned */}
+        <div className="flex items-center justify-end relative">
+          <Link href="/" aria-label="Go to homepage" className={`${logoPosition} ${
+            isMounted ? 'transition-all duration-300 ease-in-out' : ''
+          }`}>
+            <div 
+              className={`bg-gray-100 rounded-full flex items-center justify-center ${
+                isMounted ? 'transition-all duration-300 ease-in-out' : ''
+              } ${logoSize}`}
+            >
+              <span className={`text-gray-800 font-bold ${
+                isMounted ? 'transition-all duration-300 ease-in-out' : ''
+              } ${textSize}`}>
+                LOGO
+              </span>
+            </div>
+          </Link>
+        </div>
+        
+        {/* Desktop Navigation Links - centered in middle column */}
+        <div className="hidden md:flex items-center justify-center w-full">
+          <div className="flex justify-between w-full px-10 md:px-16 lg:px-24 xl:px-32">
+            <Link href="#" className="hover:text-blue-600">
+              <NavText>Catalogue</NavText>
+            </Link>
+            <Link href="#" className="hover:text-blue-600">
+              <NavText>Publish</NavText>
+            </Link>
+            <Link href="#" className="hover:text-blue-600">
+              <NavText>Verify</NavText>
+            </Link>
+            <Link href="#" className="hover:text-blue-600">
+              <NavText>Log</NavText>
+            </Link>
+            <Link href="#" className="hover:text-blue-600">
+              <NavText>Ecosystem</NavText>
+            </Link>
+            <Link href="#" className="hover:text-blue-600">
+              <NavText>Resources</NavText>
             </Link>
           </div>
-          
-          {/* Desktop Navigation Links - hidden on mobile, centered on desktop */}
-          <div className="hidden md:flex flex-grow justify-center">
-            <div className="flex space-x-16 md:space-x-24 lg:space-x-30 xl:space-x-36">
-              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">Catalogue</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">Publish</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">Verify</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">Log</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">Ecosystem</Link>
-              <Link href="#" className="text-gray-800 hover:text-blue-600 font-bold">Resources</Link>
-            </div>
+        </div>
+        
+        {/* Empty third column for symmetry (on desktop) / Mobile Nav (on mobile) */}
+        <div className="flex items-center">
+          <div className="md:hidden ml-auto">
+            <MobileNav />
           </div>
-          
-          {/* Mobile Navigation - only visible on mobile */}
-          <MobileNav />
         </div>
       </div>
     </header>
