@@ -35,7 +35,7 @@ const FAQ = () => {
   };
 
   return (
-    <section className="py-24 bg-white">
+    <section className="pb-24 bg-white">
       <Container>
         <h2 className="text-4xl font-bold mb-4 font-sans">FAQ</h2>
 
@@ -47,7 +47,7 @@ const FAQ = () => {
                 onClick={() => toggleExpand(index)}
                 className="w-full flex justify-between items-center text-left focus:outline-none group cursor-pointer"
               >
-                <h3 className="text-2xl font-bold font-sans group-hover:text-blue-600">
+                <h3 className="text-2xl font-bold font-sans group-hover:text-blue-600 text-black/80">
                   {item.question}
                 </h3>
                 <svg
@@ -75,7 +75,7 @@ const FAQ = () => {
                     transition={{ duration: 0.3 }}
                     className="overflow-hidden"
                   >
-                    <p className="text-lg font-serif text-black/80">
+                    <p className="text-lg font-serif text-black/80 mt-6">
                       {item.answer}
                     </p>
                   </motion.div>

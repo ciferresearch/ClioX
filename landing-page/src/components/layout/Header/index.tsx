@@ -51,8 +51,8 @@ export default function Header() {
     : 'text-[10px] md:text-sm';
 
   const headerHeight = isMounted && atTop
-    ? 'h-[102px]'
-    : 'h-20';
+    ? 'h-20' // 80px when at top
+    : 'h-16'; // 64px when scrolled
     
   const logoPosition = isMounted && atTop
     ? 'absolute bottom-0 translate-y-1/2'
@@ -62,7 +62,7 @@ export default function Header() {
     <header
       className={`w-full bg-white sticky top-0 z-50 ${headerHeight} transition-all duration-300 ease-in-out`}
     >
-      <div className="h-full px-4 md:px-8 lg:px-12 xl:px-16 grid grid-cols-[1fr_4fr_1fr]">
+      <div className="h-full px-4 md:px-8 lg:px-12 xl:px-16 grid grid-cols-[minmax(96px,auto)_1fr_auto]">
         {/* Logo column - right aligned */}
         <div className="flex items-center justify-end relative">
           <Link

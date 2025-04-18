@@ -40,23 +40,59 @@ export default function MobileNav() {
           onTransitionEnd={handleAnimationEnd}
         >
           <nav className="container mx-auto px-4 py-4 flex flex-col gap-4">
-            <Link href="/link1" className="hover:text-blue-600 transition-colors duration-200 font-bold" onClick={() => setIsOpen(false)}>
-              LINK 1
+            <Link 
+              href="#" 
+              className="hover:text-blue-600 transition-colors duration-200" 
+              onClick={() => setIsOpen(false)}
+            >
+              <span className="font-sans text-base font-bold tracking-[-0.019em]">
+                Catalogue
+              </span>
             </Link>
-            <Link href="/link2" className="hover:text-blue-600 transition-colors duration-200 font-bold" onClick={() => setIsOpen(false)}>
-              LINK 2
+            <Link 
+              href="#" 
+              className="hover:text-blue-600 transition-colors duration-200" 
+              onClick={() => setIsOpen(false)}
+            >
+              <span className="font-sans text-base font-bold tracking-[-0.019em]">
+                Publish
+              </span>
             </Link>
-            <Link href="/link3" className="hover:text-blue-600 transition-colors duration-200 font-bold" onClick={() => setIsOpen(false)}>
-              LINK 3
+            <Link 
+              href="#" 
+              className="hover:text-blue-600 transition-colors duration-200" 
+              onClick={() => setIsOpen(false)}
+            >
+              <span className="font-sans text-base font-bold tracking-[-0.019em]">
+                Verify
+              </span>
             </Link>
-            <Link href="/link4" className="hover:text-blue-600 transition-colors duration-200 font-bold" onClick={() => setIsOpen(false)}>
-              LINK 4
+            <Link 
+              href="#" 
+              className="hover:text-blue-600 transition-colors duration-200" 
+              onClick={() => setIsOpen(false)}
+            >
+              <span className="font-sans text-base font-bold tracking-[-0.019em]">
+                Log
+              </span>
             </Link>
-            <Link href="/link5" className="hover:text-blue-600 transition-colors duration-200 font-bold" onClick={() => setIsOpen(false)}>
-              LINK 5
+            <Link 
+              href="#" 
+              className="hover:text-blue-600 transition-colors duration-200" 
+              onClick={() => setIsOpen(false)}
+            >
+              <span className="font-sans text-base font-bold tracking-[-0.019em]">
+                Ecosystem
+              </span>
             </Link>
-            <Link href="/link6" className="hover:text-blue-600 transition-colors duration-200 font-bold" onClick={() => setIsOpen(false)}>
-              LINK 6
+            <Link 
+              href="#" 
+              className="hover:text-blue-600 transition-colors duration-200" 
+              onClick={() => setIsOpen(false)}
+            >
+              <span className="font-sans text-base font-bold tracking-[-0.019em]">
+                Resources
+              </span>
             </Link>
           </nav>
         </div>

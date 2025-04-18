@@ -16,10 +16,10 @@ export default function WhatWeDo() {
   ];
 
   return (
-    <section id="what-we-do" className="pt-18 pb-24 bg-white">
+    <section id="what-we-do" className="pb-24 bg-white">
       <Container>
         {/* Top Section */}
-        <div className="w-full mb-20">
+        <div className="w-full mb-12">
           <h2 className="text-4xl font-bold mb-4 font-sans">
             Welcoming Values-Aligned Partners
           </h2>

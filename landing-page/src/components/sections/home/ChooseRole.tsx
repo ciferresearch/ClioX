@@ -45,82 +45,84 @@ export default function ChooseRole() {
   };
 
   return (
-    <section id="choose-role" className="pt-24 bg-white">
+    <section id="choose-role" className="py-16 bg-white">
       <Container className="px-4">
         <div className="w-full mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-4 font-sans">Choose Your Role</h2>
-          <div className="mb-16">
-            <p className="text-gray-600 text-lg mb-16 font-serif">
-              Select the path that best describes you to see your next steps.
-            </p>
-          </div>
+          <h2 className="text-4xl font-bold mb-3 font-sans">Choose Your Role</h2>
+          <p className="text-gray-600 text-lg mb-10 font-serif">
+            Select the path that best describes you to see your next steps.
+          </p>
+        </div>
 
-          <div className="flex justify-between w-full">
-            {roles.map((role, index) => (
+        <div className="flex justify-between w-full">
+          {roles.map((role, index) => (
+            <div
+              key={index}
+              className="flex flex-col h-[600px] w-[360px] relative"
+            >
               <div
-                key={index}
-                className="flex flex-col h-[700px] w-[360px] relative"
+                className={`flex flex-col items-center text-center h-[450px] w-full
+                  cursor-pointer transition-all duration-300 pb-6
+                  ${
+                    selectedRole === index
+                      ? "ring-2 ring-blue-600 rounded-2xl"
+                      : ""
+                  }`}
+                onClick={() => handleRoleClick(index)}
               >
-                <div
-                  className={`flex flex-col items-center text-center h-[550px] w-full
-                    cursor-pointer transition-all duration-300 pb-8
-                    ${
-                      selectedRole === index
-                        ? "ring-2 ring-blue-600 rounded-2xl"
-                        : ""
-                    }`}
-                  onClick={() => handleRoleClick(index)}
-                >
-                  <div className="flex flex-col h-full items-center">
-                    <div className="h-[260px] flex items-center justify-center">
-                      <div className="relative w-[180px] h-[180px]">
-                        <Image
-                          src={role.imageSrc}
-                          alt={`${role.title} icon`}
-                          fill
-                          className="object-contain"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="h-[100px] flex items-center justify-center">
-                      <h3 className="text-2xl font-bold font-sans">{role.title}</h3>
-                    </div>
-
-                    <div className="h-[130px] flex items-start justify-center pt-4 pb-6">
-                      <p className="text-lg font-serif text-gray-600">{role.description}</p>
+                <div className="flex flex-col h-full items-center">
+                  <div className="h-[200px] flex items-center justify-center">
+                    <div className="relative w-[160px] h-[160px]">
+                      <Image
+                        src={role.imageSrc}
+                        alt={`${role.title} icon`}
+                        fill
+                        className="object-contain"
+                      />
                     </div>
                   </div>
-                </div>
 
-                <div className="mt-4 w-[360px] mx-auto">
-                  <div
-                    className={`space-y-4 transition-all duration-300 ease-out flex flex-col items-center
-                      ${
-                        selectedRole === index
-                          ? "opacity-100 scale-100"
-                          : "opacity-0 scale-95"
-                      }`}
-                  >
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      className="w-[280px] bg-blue-600 hover:bg-blue-700 cursor-pointer transform transition-all duration-200"
-                    >
-                      {role.primaryAction}
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="lg"
-                      className="w-[280px] text-blue-600 bg-transparent hover:bg-gray-50 cursor-pointer transform transition-all duration-200"
-                    >
-                      {role.secondaryAction}
-                    </Button>
+                  <div className="h-[80px] flex items-center justify-center">
+                    <h3 className="text-2xl font-bold font-sans">{role.title}</h3>
+                  </div>
+
+                  <div className="h-[100px] flex items-start justify-center pt-2">
+                    <p className="text-lg font-serif text-black/80">{role.description}</p>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div className="mt-4 w-[360px] mx-auto">
+                <div
+                  className={`space-y-3 transition-all duration-300 ease-out flex flex-col items-center
+                    ${
+                      selectedRole === index
+                        ? "opacity-100 scale-100"
+                        : "opacity-0 scale-95"
+                    }`}
+                >
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className={`w-[280px] bg-blue-600 hover:bg-blue-700 transform transition-all duration-200 ${
+                      selectedRole === index ? "cursor-pointer" : "cursor-default pointer-events-none"
+                    }`}
+                  >
+                    {role.primaryAction}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className={`w-[280px] text-blue-600 bg-transparent hover:bg-gray-50 transform transition-all duration-200 ${
+                      selectedRole === index ? "cursor-pointer" : "cursor-default pointer-events-none"
+                    }`}
+                  >
+                    {role.secondaryAction}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </Container>
     </section>

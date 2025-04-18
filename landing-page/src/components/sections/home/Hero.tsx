@@ -30,12 +30,20 @@ export default function Hero() {
 
           <div className="flex gap-10">
             <Link href="#choose-role">
-              <Button variant="primary" size="lg" className="cursor-pointer">
+              <Button 
+                variant="primary" 
+                size="lg" 
+                className="cursor-pointer hover:bg-blue-700 hover:scale-[1.02] transform transition-all duration-200 ease-in-out"
+              >
                 Get Started
               </Button>
             </Link>
             <Link href="#what-we-do">
-              <Button variant="secondary" size="lg" className="cursor-pointer">
+              <Button 
+                variant="secondary" 
+                size="lg" 
+                className="cursor-pointer hover:bg-gray-100 hover:scale-[1.02] transform transition-all duration-200 ease-in-out"
+              >
                 Learn More
               </Button>
             </Link>
