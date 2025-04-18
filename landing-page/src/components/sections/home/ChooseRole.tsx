@@ -72,7 +72,7 @@ export default function ChooseRole() {
               >
                 <div className="flex flex-col h-full items-center">
                   <div className="h-[200px] flex items-center justify-center">
-                    <div className="relative w-[160px] h-[160px]">
+                    <div className="relative w-[200px] h-[200px]">
                       <Image
                         src={role.imageSrc}
                         alt={`${role.title} icon`}
