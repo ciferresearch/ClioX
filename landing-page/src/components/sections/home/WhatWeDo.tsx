@@ -1,6 +1,6 @@
 import Container from '@/components/layout/Container';
 import PartnerCarousel from './PartnerCarousel';
-import { BodyText, DisplayLarge } from '@/components/common/Typography';
+
 export default function WhatWeDo() {
   const partners = [
     { id: 1, name: 'Partner 1' },
@@ -20,7 +20,9 @@ export default function WhatWeDo() {
       <Container>
         {/* Top Section */}
         <div className="w-full mb-20">
-          <DisplayLarge>Welcoming Values-Aligned Partners</DisplayLarge>
+          <h2 className="text-4xl font-bold mb-4 font-sans">
+            Welcoming Values-Aligned Partners
+          </h2>
         </div>
 
         {/* Partner logos carousel */}
@@ -28,33 +30,33 @@ export default function WhatWeDo() {
 
         {/* Bottom Content Section */}
         <div className="w-full mx-auto">
-          <div className="space-y-8 text-lg text-gray-700">
-            <BodyText align="left">
+          <div className="space-y-8 text-lg">
+            <p className="text-lg font-serif text-black/80">
               This platform was designed to be built together. From memory
               institutions to research labs, our partners are shaping a shared
               Web3 ecosystem grounded in community, care, and transparency.
-            </BodyText>
+            </p>
 
-            <BodyText align="left">
+            <p className="text-lg font-serif text-black/80">
               As public institutions increasingly digitize and share records
               online, and as more digital-born records become accessible, the
               risk of using AI, including exposing sensitive personal data, has
               grown significantly.
-            </BodyText>
+            </p>
 
-            <BodyText align="left">
+            <p className="text-lg font-serif text-black/80">
               ClioX addresses these risks by allowing archives to manage consent
               and usage rights for their data while ensuring that computations
               are performed where the data is stored. This means that the raw
               data is never moved or exposed; only the results or insights from
               the computations are shared.
-            </BodyText>
+            </p>
 
-            <BodyText align="left">
+            <p className="text-lg font-serif text-black/80">
               The platform also provides AI + visual analytic tools to help
               researchers analyze large volumes of archival data and discover
               new insights among them.
-            </BodyText>
+            </p>
           </div>
         </div>
       </Container>

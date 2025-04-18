@@ -8,7 +8,6 @@
   --foreground: #000000CC;
 }
 
-
 body {
   background: var(--background);
   color: var(--foreground);
@@ -31,10 +30,7 @@ html {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   
-  --text-nav: 1.25rem;
-  --text-body: 1.5rem;
-  --text-display-large: 2.5rem;
-  --text-display-medium: 2rem;
+  /* Removed unused font size variables since we're using Tailwind's defaults */
 }
 
 @media (prefers-color-scheme: dark) {

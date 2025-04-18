@@ -4,7 +4,17 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import MobileNav from './MobileNav';
 import { Bars3Icon } from '@heroicons/react/24/outline';
-import { NavText } from '@/components/common/Typography';
+
+// Simple NavItem component to avoid repetition
+function NavItem({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href} className="hover:text-blue-600">
+      <span className="font-sans text-base font-bold tracking-[-0.019em]">
+        {children}
+      </span>
+    </Link>
+  );
+}
 
 export default function Header() {
   // Use a simple boolean state with a default value
@@ -49,51 +59,47 @@ export default function Header() {
     : 'relative';
 
   return (
-    <header className={`w-full bg-white sticky top-0 z-50 ${headerHeight} transition-all duration-300 ease-in-out`}>
+    <header
+      className={`w-full bg-white sticky top-0 z-50 ${headerHeight} transition-all duration-300 ease-in-out`}
+    >
       <div className="h-full px-4 md:px-8 lg:px-12 xl:px-16 grid grid-cols-[1fr_4fr_1fr]">
         {/* Logo column - right aligned */}
         <div className="flex items-center justify-end relative">
-          <Link href="/" aria-label="Go to homepage" className={`${logoPosition} ${
-            isMounted ? 'transition-all duration-300 ease-in-out' : ''
-          }`}>
-            <div 
+          <Link
+            href="/"
+            aria-label="Go to homepage"
+            className={`${logoPosition} ${
+              isMounted ? "transition-all duration-300 ease-in-out" : ""
+            }`}
+          >
+            <div
               className={`bg-gray-100 rounded-full flex items-center justify-center ${
-                isMounted ? 'transition-all duration-300 ease-in-out' : ''
+                isMounted ? "transition-all duration-300 ease-in-out" : ""
               } ${logoSize}`}
             >
-              <span className={`text-gray-800 font-bold ${
-                isMounted ? 'transition-all duration-300 ease-in-out' : ''
-              } ${textSize}`}>
+              <span
+                className={`text-gray-800 font-bold ${
+                  isMounted ? "transition-all duration-300 ease-in-out" : ""
+                } ${textSize}`}
+              >
                 LOGO
               </span>
             </div>
           </Link>
         </div>
-        
+
         {/* Desktop Navigation Links - centered in middle column */}
         <div className="hidden md:flex items-center justify-center w-full">
           <div className="flex justify-between w-full px-10 md:px-16 lg:px-24 xl:px-32">
-            <Link href="#" className="hover:text-blue-600">
-              <NavText>Catalogue</NavText>
-            </Link>
-            <Link href="#" className="hover:text-blue-600">
-              <NavText>Publish</NavText>
-            </Link>
-            <Link href="#" className="hover:text-blue-600">
-              <NavText>Verify</NavText>
-            </Link>
-            <Link href="#" className="hover:text-blue-600">
-              <NavText>Log</NavText>
-            </Link>
-            <Link href="#" className="hover:text-blue-600">
-              <NavText>Ecosystem</NavText>
-            </Link>
-            <Link href="#" className="hover:text-blue-600">
-              <NavText>Resources</NavText>
-            </Link>
+            <NavItem href="#">Catalogue</NavItem>
+            <NavItem href="#">Publish</NavItem>
+            <NavItem href="#">Verify</NavItem>
+            <NavItem href="#">Log</NavItem>
+            <NavItem href="#">Ecosystem</NavItem>
+            <NavItem href="#">Resources</NavItem>
           </div>
         </div>
-        
+
         {/* Empty third column for symmetry (on desktop) / Mobile Nav (on mobile) */}
         <div className="flex items-center">
           <div className="md:hidden ml-auto">

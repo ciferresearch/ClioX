@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Container from '@/components/layout/Container';
-import { DisplayLarge, DisplayMedium, BodyText } from '@/components/common/Typography';
+
 interface FAQItem {
   question: string;
   answer: string;
@@ -37,25 +37,22 @@ const FAQ = () => {
   return (
     <section className="py-24 bg-white">
       <Container>
-        <DisplayLarge align="left" className="mb-5">FAQ</DisplayLarge>
+        <h2 className="text-4xl font-bold mb-4 font-sans">FAQ</h2>
 
         <div className="divide-y divide-gray-200">
-        {/* <div> */}
+          {/* <div> */}
           {faqData.map((item, index) => (
-            <div
-              key={index}
-              className="py-8"
-            >
+            <div key={index} className="py-8">
               <button
                 onClick={() => toggleExpand(index)}
-                className="w-full flex justify-between items-center text-left focus:outline-none group"
+                className="w-full flex justify-between items-center text-left focus:outline-none group cursor-pointer"
               >
-                <DisplayMedium className="group-hover:text-blue-600">
+                <h3 className="text-2xl font-bold font-sans group-hover:text-blue-600">
                   {item.question}
-                </DisplayMedium>
+                </h3>
                 <svg
                   className={`w-6 h-6 text-gray-500 transform transition-transform duration-200 ${
-                    expandedIndices.includes(index) ? 'rotate-180' : ''
+                    expandedIndices.includes(index) ? "rotate-180" : ""
                   }`}
                   fill="none"
                   viewBox="0 0 24 24"
@@ -73,14 +70,14 @@ const FAQ = () => {
                 {expandedIndices.includes(index) && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
+                    animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.3 }}
                     className="overflow-hidden"
                   >
-                    <BodyText align="left" className="mt-12">
+                    <p className="text-lg font-serif text-black/80">
                       {item.answer}
-                    </BodyText>
+                    </p>
                   </motion.div>
                 )}
               </AnimatePresence>

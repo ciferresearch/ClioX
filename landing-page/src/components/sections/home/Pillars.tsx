@@ -1,4 +1,3 @@
-import { DisplayLarge, BodyText, DisplayMedium } from '@/components/common/Typography';
 import Container from '@/components/layout/Container';
 import Image from 'next/image';
 
@@ -30,16 +29,16 @@ export default function Pillars() {
   return (
     <section className="py-24 bg-white">
       <Container>
-        <div className="flex flex-col items-center text-center mb-24">
-          <DisplayLarge align="center" className="mb-6">Our Core Pillars</DisplayLarge>
-          <BodyText align="center">
+        <div className="flex flex-col items-center text-center">
+          <h2 className="text-4xl font-bold mb-4 font-sans">Our Core Pillars</h2>
+          <p className="text-lg font-serif text-gray-700 font-normal mb-16">
             Building a sustainable and ethical future for digital archives and cultural heritage
-          </BodyText>
+          </p>
         </div>
         
-        <div className="grid md:grid-cols-3 gap-12 lg:gap-16">
-          {pillars.map((pillar) => (
-            <div key={pillar.id} className="flex flex-col">
+        <div className="grid md:grid-cols-3 gap-12 lg:gap-20">
+          {pillars.map((pillar, index) => (
+            <div key={pillar.id} className={`flex flex-col ${index === 1 ? 'px-4' : ''}`}>
               {/* Image */}
               <div className="mb-8 flex items-center justify-center">
                 <Image 
@@ -52,13 +51,11 @@ export default function Pillars() {
               </div>
               
               {/* Text content */}
-              <div className="space-y-4">
-                <DisplayMedium align="center" className="mb-10">
-                  {pillar.title}
-                </DisplayMedium>
-                <BodyText align="center" className="text-lg text-gray-700 leading-relaxed">
+              <div className="space-y-4 max-w-[300px] mx-auto">
+                <h3 className="text-2xl font-bold font-sans text-center min-h-[80px] flex items-start justify-center mb-4">{pillar.title}</h3>
+                <p className="text-lg font-normal font-serif text-black/80 leading-relaxed text-center">
                   {pillar.content}
-                </BodyText>
+                </p>
               </div>
             </div>
           ))}

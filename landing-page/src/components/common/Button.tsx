@@ -1,5 +1,4 @@
 import React from 'react';
-import { NavText } from './Typography';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline';
@@ -56,13 +55,20 @@ export default function Button({
     lg: '',
   };
   
+  // Text size classes based on button size
+  const textClasses = {
+    sm: 'text-xs',
+    md: 'text-sm font-bold',
+    lg: 'text-lg font-bold tracking-[-0.019em]',
+  };
+  
   return (
     <button
       className={`${baseClasses} ${sizeClasses[size]} ${className || ''}`}
       style={getButtonStyle()}
       {...props}
     >
-      <NavText>{children}</NavText>
+      <span className={`font-sans ${textClasses[size]}`}>{children}</span>
     </button>
   );
 } 

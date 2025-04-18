@@ -1,7 +1,6 @@
 import Button from '@/components/common/Button';
 import Container from '@/components/layout/Container';
 import Link from 'next/link';
-import { DisplayLarge, BodyText } from '@/components/common/Typography';
 
 export default function Hero() {
   return (
@@ -18,21 +17,16 @@ export default function Hero() {
 
       <Container>
         <div className="flex flex-col relative z-10">
-          <DisplayLarge
-            className="mb-6"
-          >
+          <h1 className="font-sans text-4xl md:text-5xl leading-normal tracking-[-0.019em] font-bold mb-6">
             Explore archival data securely. Build knowledge collectively.
-          </DisplayLarge>
+          </h1>
 
-          <BodyText
-            align="left"
-            className="max-w-4xl mb-15 opacity-90"
-          >
+          <p className="font-serif text-lg md:text-xl text-body leading-normal tracking-[-0.019em] font-normal text-left max-w-3xl mb-15 opacity-90">
             ClioX is a new kind of privacy-first platform—built by and for
             researchers, archivists, and cultural institutions. It's designed to
             help you explore, share, and collaborate on sensitive archival
             material with AI without compromising on privacy or ownership.
-          </BodyText>
+          </p>
 
           <div className="flex gap-10">
             <Link href="#choose-role">
