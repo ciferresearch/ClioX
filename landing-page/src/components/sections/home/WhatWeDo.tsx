@@ -16,7 +16,7 @@ export default function WhatWeDo() {
   ];
 
   return (
-    <section id="what-we-do" className="pb-24 bg-white">
+    <section id="what-we-do" className="py-16 bg-white">
       <Container>
         {/* Top Section */}
         <div className="w-full mb-12">
