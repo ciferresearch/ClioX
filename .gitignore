@@ -26,6 +26,7 @@ htmlcov/
 .tox/
 .nox/
 .hypothesis/
+config.py
 
 # Node.js
 node_modules/

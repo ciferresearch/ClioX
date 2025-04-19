@@ -6,17 +6,21 @@ import re
 import json
 import os
 import requests
+import io
 from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from collections import Counter
 import nltk
 from nltk.tokenize import sent_tokenize
+import boto3
 
 # Import utility functions
 from utils.text_processing import extract, cleansing
 from utils.pii_detection import PII_detection_masking
 from utils.sentiment_analysis import sentiment_classification
+# Import S3 configuration
+from config import S3_CONFIG
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -26,6 +30,12 @@ CORS(app)  # Enable CORS to allow cross-origin requests
 os.makedirs('static/data', exist_ok=True)
 os.makedirs('static/data/temp', exist_ok=True)
 os.makedirs('outputs', exist_ok=True)
+
+# Validate S3 configuration
+required_s3_config = ['bucket_name', 'file_key', 'region_name']
+missing_config = [key for key in required_s3_config if key not in S3_CONFIG]
+if missing_config:
+    raise ValueError(f"Missing required S3 configuration keys: {', '.join(missing_config)}")
 
 @app.route('/api/analyze', methods=['POST', 'GET'])
 def analyze_data(force_reprocess=False):
@@ -49,12 +59,38 @@ def analyze_data(force_reprocess=False):
                     'message': 'Data already processed. Using existing files.'
                 })
 
-        # Use the enron_subset.csv file in the backend/data directory
-        file_path = 'data/enron_subset.csv'
-
-        # Read CSV file
-        print(f"Reading data from {file_path}")
-        df = pd.read_csv(file_path)
+        # Use S3 bucket for data source from config file
+        try:
+            bucket_name = S3_CONFIG['bucket_name']
+            file_key = S3_CONFIG['file_key']
+            region_name = S3_CONFIG['region_name']
+            
+            print(f"Attempting to read data from S3 bucket: {bucket_name}, file: {file_key}, region: {region_name}")
+            
+            # Create a standard S3 client - keep it simple
+            s3_client = boto3.client('s3', region_name=region_name)
+            
+            # List available objects in bucket for debugging
+            try:
+                objects = s3_client.list_objects_v2(Bucket=bucket_name, Prefix='')
+                if 'Contents' in objects:
+                    print(f"Available files in bucket: {[obj['Key'] for obj in objects['Contents']]}")
+                else:
+                    print(f"No files found in bucket {bucket_name}")
+            except Exception as list_error:
+                print(f"Could not list bucket contents: {list_error}")
+            
+            # Get the object
+            response = s3_client.get_object(Bucket=bucket_name, Key=file_key)
+            stream = io.BytesIO(response['Body'].read())
+            df = pd.read_csv(stream)
+            print(f"Successfully loaded data from S3: {len(df)} rows")
+        except Exception as s3_error:
+            print(f"Error reading from S3: {str(s3_error)}")
+            return jsonify({
+                'status': 'error',
+                'message': f"Failed to read data from S3: {str(s3_error)}"
+            }), 500
 
         # Extract email content
         email_data = df["message"].apply(extract)

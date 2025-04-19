@@ -72,7 +72,16 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 `python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords')"`
 
 * Download spaCy model:
-`python -m spacy download en_core_web_sm`
+`python -c "import spacy; spacy.cli.download('en_core_web_sm')"`
+
+* Configure S3 settings:
+```
+# Copy the example config file
+cp config.example.py config.py
+
+# Edit config.py with your S3 bucket information
+# Update bucket_name, file_key, and region_name values
+```
 
 * Start the Flask server:
 `python app.py`
