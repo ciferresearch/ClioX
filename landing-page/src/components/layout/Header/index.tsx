@@ -90,7 +90,8 @@ export default function Header() {
 
         {/* Desktop Navigation Links - centered in middle column */}
         <div className="hidden md:flex items-center justify-center w-full">
-          <div className="flex justify-between w-full px-10 md:px-16 lg:px-24 xl:px-32">
+          {/* <div className="flex justify-between w-full px-10 md:px-16 lg:px-24 xl:px-32"> */}
+          <div className="flex justify-between w-auto md:w-3/4 lg:w-2/3 mx-auto">
             <NavItem href="#">Catalogue</NavItem>
             <NavItem href="#">Publish</NavItem>
             <NavItem href="#">Verify</NavItem>
