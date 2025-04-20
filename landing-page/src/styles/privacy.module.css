@@ -1,0 +1,182 @@
+/* Table of Contents styling */
+.content h2[id="table-of-contents"],
+.content h3[id="table-of-contents"] {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  font-family: var(--font-ibm-plex-sans);
+  color: #282939;
+}
+
+.content h2[id="table-of-contents"] + ul,
+.content h3[id="table-of-contents"] + ul {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background-color: rgb(249 250 251);
+  border-radius: 0.5rem;
+  border-width: 1px;
+  border-color: rgb(243 244 246);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  list-style-type: none;
+  padding-left: 1rem;
+}
+
+.content h2[id="table-of-contents"] + ul li,
+.content h3[id="table-of-contents"] + ul li {
+  margin-left: 0;
+  padding-left: 1rem;
+  border-left-width: 2px;
+  border-color: rgb(229 231 235);
+  margin-bottom: 0.5rem;
+}
+
+.content h2[id="table-of-contents"] + ul li a,
+.content h3[id="table-of-contents"] + ul li a {
+  color: rgb(55 65 81);
+  font-size: 1rem;
+  transition-property: color;
+  transition-duration: 200ms;
+}
+
+.content h2[id="table-of-contents"] + ul li a:hover,
+.content h3[id="table-of-contents"] + ul li a:hover {
+  color: #282939;
+  text-decoration: underline;
+}
+
+/* Language selector styling */
+.languageSelector {
+  border-width: 1px;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  margin-top: 2rem;
+  display: inline-block;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition-property: box-shadow;
+  transition-duration: 200ms;
+}
+
+.languageSelector:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.languageSelector div:first-child {
+  font-size: 0.875rem;
+  text-align: center;
+  margin-bottom: 0.25rem;
+  color: rgb(107 114 128);
+}
+
+/* Last updated styling */
+.lastUpdated {
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: rgb(107 114 128);
+  font-style: italic;
+}
+
+/* Numbered section headings styling - simpler approach */
+.content h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-top: 3rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom-width: 1px;
+  border-color: rgb(243 244 246);
+}
+
+/* Custom bullet point styling */
+.content ul {
+  list-style: none;
+  padding-left: 2rem;
+  margin: 1.25rem 0;
+}
+
+.content ul li {
+  position: relative;
+  display: block;
+}
+
+.content ul li:before {
+  content: '▪';  /* Square bullet character */
+  position: absolute;
+  left: -1.5rem;
+  top: -2px;
+  color: #282939;
+  user-select: none;
+}
+
+.content li + li {
+  margin-top: 0.5rem;
+}
+
+/* Preserve styling for table of contents list */
+.content h2[id="table-of-contents"] + ul li:before,
+.content h3[id="table-of-contents"] + ul li:before {
+  content: none;
+}
+
+/* Email links styling */
+.content a[href^="mailto:"] {
+  font-weight: 500;
+  background-color: rgb(249 250 251);
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+  border-radius: 0.25rem;
+  border-bottom-width: 1px;
+  border-color: rgb(229 231 235);
+}
+
+/* Add a subtle background to code blocks */
+.content pre,
+.content code {
+  background-color: rgb(249 250 251);
+  border-width: 1px;
+  border-color: rgb(243 244 246);
+  color: rgb(31 41 55);
+  border-radius: 0.25rem;
+}
+
+/* Style blockquotes */
+.content blockquote {
+  font-style: italic;
+  background-color: rgb(249 250 251);
+  border-left-width: 4px;
+  border-color: #282939;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  border-top-right-radius: 0.25rem;
+  border-bottom-right-radius: 0.25rem;
+}
+
+/* Improve spacing for better readability */
+.content p {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* Basic styling for sections */
+.content strong {
+  color: #282939;
+  font-weight: 600;
+}
+
+/* Subsection styling */
+.content strong:first-child {
+  display: inline-block;
+  margin-top: 0.5rem;
+}
+
+/* Emphasized text within sections */
+.content em {
+  color: #282939;
+  font-style: italic;
+} 

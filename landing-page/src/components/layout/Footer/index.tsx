@@ -46,7 +46,7 @@ export default function Footer() {
             <h3 className="font-bold mb-6">Legal</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/privacy" className="hover:text-blue-300">
+                <Link href="/privacy/en" className="hover:text-blue-300">
                   Privacy Policy
                 </Link>
               </li>
