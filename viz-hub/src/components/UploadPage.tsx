@@ -150,11 +150,11 @@ const UploadPage: React.FC<UploadPageProps> = ({ onUploadSuccess }) => {
       } else {
         reader.readAsDataURL(state.file);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setState(prev => ({
         ...prev,
         uploading: false,
-        error: `Upload failed: ${err.message}`,
+        error: `Upload failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
         success: false
       }));
       console.error('Upload error:', err);
@@ -169,40 +169,93 @@ const UploadPage: React.FC<UploadPageProps> = ({ onUploadSuccess }) => {
         <h3 className="text-xl font-semibold mb-2 text-gray-800">{title}</h3>
         <p className="text-sm text-gray-600 mb-4">{description}</p>
 
-        <div className="mb-4">
-          <input
-            type="file"
-            onChange={(e) => handleFileChange(e, type)}
-            className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            accept=".csv,.json,.txt"
-            disabled={state.uploading || state.success}
-          />
-          {state.file && (
-            <p className="mt-2 text-sm text-gray-600">
-              Selected: {state.file.name} ({(state.file.size / 1024).toFixed(2)} KB)
-            </p>
-          )}
+        <div className="mb-2">
+          <div className="relative">
+            <input
+              id={`file-input-${type}`}
+              type="file"
+              onChange={(e) => handleFileChange(e, type)}
+              className="sr-only"  // Hide the actual input but keep it functional
+              accept=".csv,.json,.txt"
+              disabled={state.uploading || state.success}
+            />
+            
+            <label 
+              htmlFor={`file-input-${type}`}
+              className={`flex items-center justify-between px-4 py-2 w-full border ${state.file ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} rounded-md cursor-pointer hover:bg-gray-50 transition-colors ${(state.uploading || state.success) ? 'opacity-70 cursor-not-allowed' : ''}`}
+            >
+              <div className="overflow-hidden text-ellipsis whitespace-nowrap">
+                {state.file ? (
+                  <span className="text-blue-600 font-medium">{state.file.name}</span>
+                ) : (
+                  <span className="text-gray-500">Select a file...</span>
+                )}
+              </div>
+              <span className={`ml-2 px-3 py-1 text-xs rounded-md ${state.file ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                Browse
+              </span>
+            </label>
+          </div>
+          
+          {/* Info area - always visible with different content */}
+          <div className="h-8 mt-2 flex items-center">
+            {state.file ? (
+              <p className="text-xs text-gray-600 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {(state.file.size / 1024).toFixed(2)} KB · {state.file.type || 'unknown type'}
+              </p>
+            ) : (
+              <p className="text-xs text-gray-500 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {getFileTypeHint(type)}
+              </p>
+            )}
+          </div>
         </div>
 
         <button
           onClick={() => handleUpload(type)}
           disabled={!state.file || state.uploading || state.success}
-          className={`w-full py-2 px-4 rounded-md font-medium text-white ${
+          className={`w-full px-4 py-2 rounded-lg text-sm transition-colors ${
             !state.file || state.uploading || state.success
-              ? 'bg-blue-300 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700'
-          } transition-colors duration-200`}
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-blue-500 hover:bg-blue-600 text-white cursor-pointer'
+          }`}
         >
-          {state.uploading ? 'Uploading...' : state.success ? 'Uploaded ✓' : 'Upload File'}
+          {state.uploading ? "Uploading..." : state.success ? "Uploaded" : "Upload File"}
         </button>
 
         {state.error && (
-          <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
-            {state.error}
+          <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{state.error}</span>
           </div>
         )}
       </div>
     );
+  };
+
+  const getFileTypeHint = (type: VisualizationType): string => {
+    switch (type) {
+      case 'wordCloud':
+        return 'Accepts TXT or JSON files with word frequencies data';
+      case 'dateDistribution':
+        return 'CSV format with "time" and "count" columns recommended';
+      case 'emailDistribution':
+        return 'CSV format with "emails_per_day" column required';
+      case 'sentiment':
+        return 'JSON format with sentiment categories and values';
+      case 'documentSummary':
+        return 'Upload text content or JSON with document statistics';
+      default:
+        return 'Select a supported file (.csv, .json, .txt)';
+    }
   };
 
   return (
