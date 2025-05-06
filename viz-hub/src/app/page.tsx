@@ -5,18 +5,28 @@ import SentimentChartV2 from '../components/SentimentChart_v2';
 import DataDistribution from '../components/DataDistribution';
 import WordCloud from '@/components/WordCloud';
 import DocumentSummary from '../components/DocumentSummary';
-import SkeletonLoader from '@/components/SkeletonLoader';
 import UploadPage from '../components/UploadPage';
+import { STORAGE_KEYS, useDataStore } from '../store/dataStore';
 
 export default function Home() {
   const [hasData, setHasData] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { checkDataStatus } = useDataStore();
   
   // Check for uploaded data
   useEffect(() => {
     const checkData = () => {
-      const uploadedData = localStorage.getItem('uploadedData');
-      setHasData(!!uploadedData);
+      // Check if any of the required data types exists in localStorage
+      const dataExists = Object.values(STORAGE_KEYS).some(key => 
+        localStorage.getItem(key) !== null
+      );
+      setHasData(dataExists);
+      
+      if (dataExists) {
+        // Update data status in the store if data exists
+        checkDataStatus();
+      }
+      
       setIsLoading(false);
     };
     
@@ -25,7 +35,7 @@ export default function Home() {
     // Listen for storage changes in case data is uploaded in another tab
     window.addEventListener('storage', checkData);
     return () => window.removeEventListener('storage', checkData);
-  }, []);
+  }, [checkDataStatus]);
   
   // Handle successful upload
   const handleUploadSuccess = () => {
