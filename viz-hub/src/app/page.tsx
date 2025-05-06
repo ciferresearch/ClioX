@@ -94,14 +94,14 @@ export default function Home() {
                 localStorage.clear();
                 checkDataStatus();
               }}
-              className="px-5 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm transition-colors"
+              className="px-5 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm transition-colors cursor-pointer"
             >
               Clear All Data
             </button>
           )}
           <button
             onClick={() => setShowUploadModal(true)}
-            className="px-5 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm transition-colors flex items-center justify-center gap-2"
+            className="px-5 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
