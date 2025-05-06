@@ -357,7 +357,23 @@ def get_document_summary():
     """Get document summary"""
     try:
         print("Document summary API called")
-        # Check if we have cleaned data
+        
+        # Check if we already have the summary file
+        if os.path.exists('static/data/document_summary.json'):
+            print("Using existing document summary file")
+            with open('static/data/document_summary.json', 'r') as f:
+                stats = json.load(f)
+            return jsonify(stats)
+            
+        
+        # Check if summary file exists after analysis
+        if os.path.exists('static/data/document_summary.json'):
+            print("Using newly generated document summary file")
+            with open('static/data/document_summary.json', 'r') as f:
+                stats = json.load(f)
+            return jsonify(stats)
+            
+        # If still no summary file, check for the cleaned data
         if not os.path.exists('outputs/enron_cleaned.csv'):
             print("Error: No cleaned data file found at outputs/enron_cleaned.csv")
             return jsonify({
@@ -405,6 +421,12 @@ def get_document_summary():
             "frequentWords": frequent_words,
             "created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
+        
+        # Save document summary to a file
+        os.makedirs('static/data', exist_ok=True)
+        with open('static/data/document_summary.json', 'w') as f:
+            json.dump(stats, f, indent=2)
+        print("Document summary saved to static/data/document_summary.json")
         
         print("Successfully generated document summary stats")
         return jsonify(stats)
