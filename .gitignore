@@ -109,3 +109,7 @@ core-components/algo/new_algo_template/backend/static/data/temp/processed_wordcl
 # Exceptions
 !core-components/algo/new_algo_template/backend/data/enron_subset.csv
 !core-components/algo/new_algo_template/frontend/public/data/temp/processed_wordcloud.json
+
+
+# next
+.next
