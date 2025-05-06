@@ -6,6 +6,7 @@ import DataDistribution from '../components/DataDistribution';
 import WordCloud from '@/components/WordCloud';
 import DocumentSummary from '../components/DocumentSummary';
 import UploadPage from '../components/UploadPage';
+import Logo from '../components/Logo';
 import { STORAGE_KEYS, useDataStore } from '../store/dataStore';
 
 export default function Home() {
@@ -179,7 +180,10 @@ export default function Home() {
       </main>
 
       <footer className="mt-12 text-center text-gray-500 text-sm">
-        <p>© {new Date().getFullYear()} ClioX</p>
+        <div className="flex items-center justify-center gap-2">
+          <Logo darkMode={false} size="small" />
+          <p>© {new Date().getFullYear()} ClioX</p>
+        </div>
       </footer>
       
       {/* Upload Modal */}
