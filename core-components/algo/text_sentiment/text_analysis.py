@@ -148,7 +148,6 @@ def sentiment_classication(df):
     return sentiment_df
 
 def get_job_details():
-    root = os.getenv('ROOT_FOLDER', '')
     """Reads in metadata information about assets used by the algo"""
     job = dict()
     job['dids'] = json.loads(os.getenv('DIDS', None))
@@ -159,12 +158,23 @@ def get_job_details():
     algo_did = os.getenv('TRANSFORMATION_DID', None)
     if job['dids'] is not None:
         for did in job['dids']:
-            job['files'][did] = list()
-            # Just one file for DID with name "0"
-            job['files'][did].append(root + '/data/inputs/' + did + '/0')
+            # get the ddo from disk
+            filename = '/data/ddos/' + did
+            print(f'Reading json from {filename}')
+            with open(filename) as json_file:
+                ddo = json.load(json_file)
+                # search for metadata service
+                for service in ddo['service']:
+                    if service['type'] == 'metadata':
+                        job['files'][did] = list()
+                        index = 0
+                        for file in service['attributes']['main']['files']:
+                            job['files'][did].append(
+                                '/data/inputs/' + did + '/' + str(index))
+                            index = index + 1
     if algo_did is not None:
         job['algo']['did'] = algo_did
-        job['algo']['ddo_path'] = root + '/data/ddos/' + algo_did
+        job['algo']['ddo_path'] = '/data/ddos/' + algo_did
     return job
 
 def text_analysis(job_details=None):
@@ -282,7 +292,7 @@ def text_analysis(job_details=None):
         })
 
     # Save JSON
-    with open("data/outputs/sentiment_converted.json", "w") as f:
+    with open("/data/outputs/sentiment_converted.json", "w") as f:
         json.dump(output, f, indent=2)
 
     # =============== date distribution data =============================================
@@ -295,13 +305,13 @@ def text_analysis(job_details=None):
     date_counts_df.columns = ['time', 'count']
     
     # save csv
-    date_counts_df.to_csv('data/outputs/date_distribution_data.csv', index=False)
+    date_counts_df.to_csv('/data/outputs/date_distribution_data.csv', index=False)
     
     # =============== email distribution data =============================================
     print('start processing email distribution data')
 
     emails_per_day_df = pd.DataFrame({'emails_per_day': date_counts.values})
-    emails_per_day_df.to_csv('data/outputs/email_per_day_distribution_data.csv', index=False)
+    emails_per_day_df.to_csv('/data/outputs/email_per_day_distribution_data.csv', index=False)
 
     # =============== wordcloud data ======================================================
     print('start processing wordcloud data')
@@ -331,7 +341,7 @@ def text_analysis(job_details=None):
     }
 
     # Save to JSON
-    with open('data/outputs/processed_wordcloud.json', 'w') as f:
+    with open('/data/outputs/processed_wordcloud.json', 'w') as f:
         json.dump(output_data, f, indent=2)
 
 
@@ -364,7 +374,7 @@ def text_analysis(job_details=None):
         "created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
-    with open('data/outputs/document_summary.json', 'w') as f:
+    with open('/data/outputs/document_summary.json', 'w') as f:
         json.dump(stats, f, indent=2)
 
 def process_chunk(chunk):
