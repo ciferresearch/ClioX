@@ -1,3 +1,0 @@
-# Exclude samples directory from being ignored
-!samples/
-!samples/**
