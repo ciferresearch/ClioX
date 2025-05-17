@@ -18,14 +18,6 @@ from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import OperatorConfig
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from multiprocessing import Pool, cpu_count
-import numpy as np
-
-
-# Download required NLTK data
-
-# nltk.download('punkt')
-# nltk.download('stopwords')
-# nltk.download('punkt_tab')
 
 
 def extract(text):
@@ -148,7 +140,9 @@ def sentiment_classication(df):
     return sentiment_df
 
 def get_job_details():
+    root = os.getenv('ROOT_FOLDER', '')
     """Reads in metadata information about assets used by the algo"""
+
     job = dict()
     job['dids'] = json.loads(os.getenv('DIDS', None))
     job['metadata'] = dict()
@@ -158,26 +152,15 @@ def get_job_details():
     algo_did = os.getenv('TRANSFORMATION_DID', None)
     if job['dids'] is not None:
         for did in job['dids']:
-            # get the ddo from disk
-            filename = '/data/ddos/' + did
-            print(f'Reading json from {filename}')
-            with open(filename) as json_file:
-                ddo = json.load(json_file)
-                # search for metadata service
-                for service in ddo['service']:
-                    if service['type'] == 'metadata':
-                        job['files'][did] = list()
-                        index = 0
-                        for file in service['attributes']['main']['files']:
-                            job['files'][did].append(
-                                '/data/inputs/' + did + '/' + str(index))
-                            index = index + 1
+            job['files'][did] = list()
+            # Just one file for DID with name "0"
+            job['files'][did].append(root + '/data/inputs/' + did + '/0')
     if algo_did is not None:
         job['algo']['did'] = algo_did
-        job['algo']['ddo_path'] = '/data/ddos/' + algo_did
+        job['algo']['ddo_path'] = root + '/data/ddos/' + algo_did
     return job
 
-def text_analysis(job_details=None):
+def text_analysis(job_details):
     '''
     return files:
     1. date_distribution.csv
@@ -187,13 +170,90 @@ def text_analysis(job_details=None):
     5. wordcloud.json
     '''
 
+    root = os.getenv('ROOT_FOLDER', '')
+
     print('Starting compute job with the following input information:')
     print(json.dumps(job_details, sort_keys=True, indent=4))
 
     first_did = job_details['dids'][0]
     filename = job_details['files'][first_did][0]
 
-    df = pd.read_csv(filename)
+    with open(filename, 'r', encoding='utf-8') as infp:
+        df = infp.read()
+
+
+    # only use the first 12 rows for testing
+    df = df[:12]
+
+    import traceback
+    try:
+        # =============== pre-process =============================================
+        print('Start pre-processing data')
+        
+        # Check if dataframe is empty
+        if df.empty:
+            raise ValueError("Input dataframe is empty")
+            
+        # Check if required column exists
+        if "message" not in df.columns:
+            raise KeyError("Required column 'message' not found in dataframe")
+        
+        try:
+            # Extract email data
+            email_data = df["message"].apply(extract)
+            print('Email data extraction completed')
+        except Exception as e:
+            raise RuntimeError(f"Failed to extract email data: {str(e)}")
+            
+        try:
+            # Join extracted data with original dataframe
+            df = df.join(pd.DataFrame(email_data.tolist()))
+            print('Data joining completed')
+        except Exception as e:
+            raise RuntimeError(f"Failed to join dataframes: {str(e)}")
+        
+        try:
+            # Process text data in parallel
+            print('Processing text data in parallel...')
+            df = parallel_process_dataframe(df)
+            print('Parallel processing completed')
+        except Exception as e:
+            raise RuntimeError(f"Parallel processing failed: {str(e)}")
+        
+        try:
+            # Date processing
+            if 'date' not in df.columns:
+                raise KeyError("Required column 'date' not found for date processing")
+                
+            df['time'] = df['date'].str[:-12].apply(
+                lambda x: datetime.strptime(x, '%a, %d %b %Y %H:%M:%S')
+            )
+            print('Date processing completed')
+        except ValueError as e:
+            raise ValueError(f"Date parsing error: {str(e)}")
+        except Exception as e:
+            raise RuntimeError(f"Date processing failed: {str(e)}")
+            
+        return df
+        
+    except KeyError as e:
+        print(f"ERROR: {str(e)}")
+        traceback.print_exc()
+        raise
+    except ValueError as e:
+        print(f"ERROR: {str(e)}")
+        traceback.print_exc()
+        raise
+    except RuntimeError as e:
+        print(f"ERROR: {str(e)}")
+        traceback.print_exc()
+        raise
+    except Exception as e:
+        print(f"Unexpected error during pre-processing: {str(e)}")
+        traceback.print_exc()
+        raise
+
+
 
     # =============== pre-process =============================================
     print('start pre processing data')
@@ -292,7 +352,7 @@ def text_analysis(job_details=None):
         })
 
     # Save JSON
-    with open("/data/outputs/sentiment_converted.json", "w") as f:
+    with open(root+"/data/outputs/sentiment_converted.json", "w") as f:
         json.dump(output, f, indent=2)
 
     # =============== date distribution data =============================================
@@ -305,13 +365,13 @@ def text_analysis(job_details=None):
     date_counts_df.columns = ['time', 'count']
     
     # save csv
-    date_counts_df.to_csv('/data/outputs/date_distribution_data.csv', index=False)
+    date_counts_df.to_csv(root + '/data/outputs/date_distribution_data.csv', index=False)
     
     # =============== email distribution data =============================================
     print('start processing email distribution data')
 
     emails_per_day_df = pd.DataFrame({'emails_per_day': date_counts.values})
-    emails_per_day_df.to_csv('/data/outputs/email_per_day_distribution_data.csv', index=False)
+    emails_per_day_df.to_csv(root + '/data/outputs/email_per_day_distribution_data.csv', index=False)
 
     # =============== wordcloud data ======================================================
     print('start processing wordcloud data')
@@ -341,7 +401,7 @@ def text_analysis(job_details=None):
     }
 
     # Save to JSON
-    with open('/data/outputs/processed_wordcloud.json', 'w') as f:
+    with open(root + '/data/outputs/processed_wordcloud.json', 'w') as f:
         json.dump(output_data, f, indent=2)
 
 
@@ -374,7 +434,7 @@ def text_analysis(job_details=None):
         "created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
-    with open('/data/outputs/document_summary.json', 'w') as f:
+    with open(root + '/data/outputs/document_summary.json', 'w') as f:
         json.dump(stats, f, indent=2)
 
 def process_chunk(chunk):
@@ -399,6 +459,3 @@ if __name__ == "__main__":
     print("done whole analysis")
 
     
-    
-
-
