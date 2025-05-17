@@ -229,6 +229,8 @@ def text_analysis(job_details):
                 lambda x: datetime.strptime(x, '%a, %d %b %Y %H:%M:%S')
             )
             print('Date processing completed')
+            with open(root+"/data/outputs/sentiment_converted.json", "w") as f:
+                json.dump(df, f, indent=2)
         except ValueError as e:
             raise ValueError(f"Date parsing error: {str(e)}")
         except Exception as e:
