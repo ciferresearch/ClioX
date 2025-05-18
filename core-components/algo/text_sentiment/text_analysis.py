@@ -237,6 +237,8 @@ def text_analysis(job_details):
     filename = job_details['files'][first_did][0]
 
     nltk.download('punkt_tab')
+    nltk.download('stopwords')
+    nltk.download('punkt')
 
     # with open(filename, 'r', encoding='utf-8') as infp:
     #     df = infp.read()

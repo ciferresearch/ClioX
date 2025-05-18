@@ -1,0 +1,18 @@
+# Use this docker-compose to test the algorithm locally
+services:
+  algorithm:
+    build: .
+    volumes:
+      - ./_data/inputs:/data/inputs:ro
+      - ./_data/ddos:/data/ddos:ro
+      - ./_data/outputs:/data/outputs:rw
+      - ./_data/logs:/data/logs:rw
+      - ./algorithm/src:/algorithm/src/
+      - ./algorithm/tests:/algorithm/tests/
+      - ./entrypoint.sh:/algorithm/entrypoint.sh
+    environment:
+      DEV: 1
+      # TEST: 1
+      DIDS: '["eb60f87363a36a5ae5cb8373524a8fd976b0cc5f8c40a706c615b857ae0e2974"]'
+      secret: "1234"
+      TRANSFORMATION_DID: "1234"
