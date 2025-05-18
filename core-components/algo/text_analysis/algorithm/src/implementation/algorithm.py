@@ -249,62 +249,62 @@ class Algorithm:
 
 
         # =============== sentiment analysis =============================================
-        print('start sentiment analysis data')
-        # sentiment df [OUTPUT]
-        sentiment_df = self.sentiment_classication(df)
+        # print('start sentiment analysis data')
+        # # sentiment df [OUTPUT]
+        # sentiment_df = self.sentiment_classication(df)
 
-        # Group by date
-        sentiment_df['date'] = pd.to_datetime(sentiment_df['date']).dt.date
+        # # Group by date
+        # sentiment_df['date'] = pd.to_datetime(sentiment_df['date']).dt.date
 
-        # Create a pivot table with sentiment scores
-        grouped = pd.pivot_table(
-            sentiment_df,
-            index='date',
-            values='sentiment_label',
-            aggfunc={
-                'sentiment_label': [
-                    lambda x: sum(x == 0),  # Very negative (1 star)
-                    lambda x: sum(x == 1),  # Negative (2 stars)
-                    lambda x: sum(x == 2),  # Neutral (3 stars)
-                    lambda x: sum(x == 3),  # Positive (4 stars)
-                    lambda x: sum(x == 4),  # Very positive (5 stars)
-                ]
-            }
-        ).reset_index()
+        # # Create a pivot table with sentiment scores
+        # grouped = pd.pivot_table(
+        #     sentiment_df,
+        #     index='date',
+        #     values='sentiment_label',
+        #     aggfunc={
+        #         'sentiment_label': [
+        #             lambda x: sum(x == 0),  # Very negative (1 star)
+        #             lambda x: sum(x == 1),  # Negative (2 stars)
+        #             lambda x: sum(x == 2),  # Neutral (3 stars)
+        #             lambda x: sum(x == 3),  # Positive (4 stars)
+        #             lambda x: sum(x == 4),  # Very positive (5 stars)
+        #         ]
+        #     }
+        # ).reset_index()
 
-        # Check if grouped is empty
-        if grouped.empty:
-            print("Warning: Sentiment data is empty after pivot_table operation")
-            output = []  # Initialize with empty list
-        else:
-            # Rename columns
-            grouped.columns = ['date', '1', '2', '3', '4', '5']
+        # # Check if grouped is empty
+        # if grouped.empty:
+        #     print("Warning: Sentiment data is empty after pivot_table operation")
+        #     output = []  # Initialize with empty list
+        # else:
+        #     # Rename columns
+        #     grouped.columns = ['date', '1', '2', '3', '4', '5']
 
-            # Add total and mean columns
-            grouped['total'] = grouped['1'] + grouped['2'] + grouped['3'] + grouped['4'] + grouped['5']
-            grouped['mean'] = (grouped['1']*1 + grouped['2']*2 + grouped['3']*3 + grouped['4']*4 + grouped['5']*5) / grouped['total']
+        #     # Add total and mean columns
+        #     grouped['total'] = grouped['1'] + grouped['2'] + grouped['3'] + grouped['4'] + grouped['5']
+        #     grouped['mean'] = (grouped['1']*1 + grouped['2']*2 + grouped['3']*3 + grouped['4']*4 + grouped['5']*5) / grouped['total']
 
-            # Convert to required JSON format
-            output = []
-            for col in grouped.columns[1:-2]:  # Exclude 'total' and 'mean'
-                try:
-                    col_value = int(col)
-                    # Map 1-5 column names to -2 to +2 sentiment scale
-                    adjusted_value = col_value - 3
-                    name = f"+{adjusted_value}" if adjusted_value > 0 else str(adjusted_value)
-                except ValueError:
-                    print(f"Error converting column {col} to sentiment scale")
-                    name = col  # Keep original name if conversion fails
+        #     # Convert to required JSON format
+        #     output = []
+        #     for col in grouped.columns[1:-2]:  # Exclude 'total' and 'mean'
+        #         try:
+        #             col_value = int(col)
+        #             # Map 1-5 column names to -2 to +2 sentiment scale
+        #             adjusted_value = col_value - 3
+        #             name = f"+{adjusted_value}" if adjusted_value > 0 else str(adjusted_value)
+        #         except ValueError:
+        #             print(f"Error converting column {col} to sentiment scale")
+        #             name = col  # Keep original name if conversion fails
 
-                output.append({
-                    "name": name,
-                    "values": [[day.strftime("%Y-%m-%dT00:00:00Z"), val] for day, val in zip(pd.to_datetime(grouped["date"]), grouped[col])]
-                })
+        #         output.append({
+        #             "name": name,
+        #             "values": [[day.strftime("%Y-%m-%dT00:00:00Z"), val] for day, val in zip(pd.to_datetime(grouped["date"]), grouped[col])]
+        #         })
 
-        # Save sentiment data to results dictionary
-        self.results['sentiment'] = output
+        # # Save sentiment data to results dictionary
+        # self.results['sentiment'] = output
 
-        print("Sentiment data processed successfully")
+        # print("Sentiment data processed successfully")
 
         # =============== date distribution data =============================================
         print('start processing date distribution data')
