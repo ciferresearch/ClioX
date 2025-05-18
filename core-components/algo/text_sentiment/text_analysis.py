@@ -38,6 +38,8 @@ def cleansing(text):
     text = re.sub(clean, '', text)
     wrd_tokens = word_tokenize(text.lower())
 
+
+
     # Remove stopwords & punctuation
     stopwords = set(nltk.corpus.stopwords.words('english'))
     filtered_wrds_token = [word for word in wrd_tokens if word.isalnum() and word not in stopwords and word not in string.punctuation]
@@ -100,49 +102,103 @@ def PII_detection_masking(text):
 
 
 ### sentiment analysis over date time aggregation  
-def sentiment_classication(df):
-    # tokenizer and classifier download for sentiment analysis 
-    # model capable for English, Dutch, German, French, Italian, Spanish  
-    tokenizer = AutoTokenizer.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
-    sentiment_classifier = AutoModelForSequenceClassification.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
+# def sentiment_classication(df):
+#     # tokenizer and classifier download for sentiment analysis 
+#     # model capable for English, Dutch, German, French, Italian, Spanish  
+#     tokenizer = AutoTokenizer.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
+#     sentiment_classifier = AutoModelForSequenceClassification.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
 
-    # 0 - very negative
-    # 1 - negative
-    # 2 - neutral
-    # 3 - positive
-    # 4 - very positive
+#     # 0 - very negative
+#     # 1 - negative
+#     # 2 - neutral
+#     # 3 - positive
+#     # 4 - very positive
 
-    date = df.get('time')
-    raw_text = df.get('masked_text').tolist()
-    clean_text = [re.sub(r'[\r\n]+', '', raw) for raw in raw_text]
-    sentiment_df = pd.DataFrame({'date': date.tolist() , 'text' : clean_text})
-    sentiment_Scores = []
-    sentiment_labels = []
+#     date = df.get('time')
+#     raw_text = df.get('masked_text').tolist()
+#     clean_text = [re.sub(r'[\r\n]+', '', raw) for raw in raw_text]
+#     sentiment_df = pd.DataFrame({'date': date.tolist() , 'text' : clean_text})
+#     sentiment_Scores = []
+#     sentiment_labels = []
 
     
-    for email_body in sentiment_df['text']:
-        tokens = tokenizer(email_body, padding=True, truncation=True, return_tensors="pt")
-        with torch.no_grad():
-            outputs = sentiment_classifier(**tokens)
+#     for email_body in sentiment_df['text']:
+#         tokens = tokenizer(email_body, padding=True, truncation=True, return_tensors="pt")
+#         with torch.no_grad():
+#             outputs = sentiment_classifier(**tokens)
         
-        # dim = 1 -> regulate along the row (prob for each class) 
-        score = outputs.logits.softmax(dim=1)
-        # dim = 0 -> average the score for each class
-        sentiment_score = score.mean(dim=0)
-        sentiment_label = sentiment_score.argmax().item()
+#         # dim = 1 -> regulate along the row (prob for each class) 
+#         score = outputs.logits.softmax(dim=1)
+#         # dim = 0 -> average the score for each class
+#         sentiment_score = score.mean(dim=0)
+#         sentiment_label = sentiment_score.argmax().item()
         
-        sentiment_Scores.append(sentiment_score.tolist())
-        sentiment_labels.append(sentiment_label)
+#         sentiment_Scores.append(sentiment_score.tolist())
+#         sentiment_labels.append(sentiment_label)
 
-    sentiment_df['sentiment_score'] = sentiment_Scores
-    sentiment_df['sentiment_label'] = sentiment_labels
+#     sentiment_df['sentiment_score'] = sentiment_Scores
+#     sentiment_df['sentiment_label'] = sentiment_labels
     
-    return sentiment_df
+#     return sentiment_df
+def sentiment_classication(self, df):
+        # Initialize models only once as class attributes
+        tokenizer = AutoTokenizer.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
+        sentiment_classifier = AutoModelForSequenceClassification.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        sentiment_classifier.to(device)
+        sentiment_classifier.eval()  # Set model to evaluation mode
+
+        # 0 - very negative
+        # 1 - negative
+        # 2 - neutral
+        # 3 - positive
+        # 4 - very positive
+
+        # Get the text data and clean it
+        raw_text = df.get('masked_text').tolist()
+        clean_text = [re.sub(r'[\r\n]+', '', raw) for raw in raw_text]
+        
+        sentiment_Scores = []
+        sentiment_labels = []
+        
+        # Process in batches
+        batch_size = 100
+        for i in range(0, len(clean_text), batch_size):
+            batch_texts = clean_text[i:i+batch_size]
+            
+            # Tokenize batch
+            tokens = Algorithm.tokenizer(batch_texts, padding=True, truncation=True, max_length=512, return_tensors="pt")
+            
+            # Move tokens to device
+            tokens = {key: val.to(Algorithm.device) for key, val in tokens.items()}
+            
+            with torch.no_grad():
+                outputs = Algorithm.sentiment_classifier(**tokens)
+            
+            # Get scores for each text in batch
+            scores = outputs.logits.softmax(dim=1)
+            
+            # Process each item in the batch
+            for score in scores:
+                sentiment_score = score.cpu().numpy().tolist()  # Move back to CPU and convert to list
+                sentiment_label = score.argmax().item()
+                
+                sentiment_Scores.append(sentiment_score)
+                sentiment_labels.append(sentiment_label)
+        
+        # Add sentiment results directly to the original dataframe
+        df['sentiment_score'] = sentiment_Scores
+        df['sentiment_label'] = sentiment_labels
+        
+        # Create a new dataframe with only the needed columns for further processing
+        sentiment_df = df[['time', 'masked_text', 'sentiment_score', 'sentiment_label']].copy()
+        sentiment_df.rename(columns={'time': 'date'}, inplace=True)
+        
+        return sentiment_df
 
 def get_job_details():
     root = os.getenv('ROOT_FOLDER', '')
     """Reads in metadata information about assets used by the algo"""
-
     job = dict()
     job['dids'] = json.loads(os.getenv('DIDS', None))
     job['metadata'] = dict()
@@ -159,6 +215,8 @@ def get_job_details():
         job['algo']['did'] = algo_did
         job['algo']['ddo_path'] = root + '/data/ddos/' + algo_did
     return job
+
+
 
 def text_analysis(job_details):
     '''
@@ -178,87 +236,19 @@ def text_analysis(job_details):
     first_did = job_details['dids'][0]
     filename = job_details['files'][first_did][0]
 
-    with open(filename, 'r', encoding='utf-8') as infp:
-        df = infp.read()
+    nltk.download('punkt_tab')
+
+    # with open(filename, 'r', encoding='utf-8') as infp:
+    #     df = infp.read()
 
 
-    # only use the first 12 rows for testing
-    df = df[:12]
-
-    import traceback
-    try:
-        # =============== pre-process =============================================
-        print('Start pre-processing data')
-        
-        # Check if dataframe is empty
-        if df.empty:
-            raise ValueError("Input dataframe is empty")
-            
-        # Check if required column exists
-        if "message" not in df.columns:
-            raise KeyError("Required column 'message' not found in dataframe")
-        
-        try:
-            # Extract email data
-            email_data = df["message"].apply(extract)
-            print('Email data extraction completed')
-        except Exception as e:
-            raise RuntimeError(f"Failed to extract email data: {str(e)}")
-            
-        try:
-            # Join extracted data with original dataframe
-            df = df.join(pd.DataFrame(email_data.tolist()))
-            print('Data joining completed')
-        except Exception as e:
-            raise RuntimeError(f"Failed to join dataframes: {str(e)}")
-        
-        try:
-            # Process text data in parallel
-            print('Processing text data in parallel...')
-            df = parallel_process_dataframe(df)
-            print('Parallel processing completed')
-        except Exception as e:
-            raise RuntimeError(f"Parallel processing failed: {str(e)}")
-        
-        try:
-            # Date processing
-            if 'date' not in df.columns:
-                raise KeyError("Required column 'date' not found for date processing")
-                
-            df['time'] = df['date'].str[:-12].apply(
-                lambda x: datetime.strptime(x, '%a, %d %b %Y %H:%M:%S')
-            )
-            print('Date processing completed')
-            with open(root+"/data/outputs/sentiment_converted.json", "w") as f:
-                json.dump(df, f, indent=2)
-        except ValueError as e:
-            raise ValueError(f"Date parsing error: {str(e)}")
-        except Exception as e:
-            raise RuntimeError(f"Date processing failed: {str(e)}")
-            
-        return df
-        
-    except KeyError as e:
-        print(f"ERROR: {str(e)}")
-        traceback.print_exc()
-        raise
-    except ValueError as e:
-        print(f"ERROR: {str(e)}")
-        traceback.print_exc()
-        raise
-    except RuntimeError as e:
-        print(f"ERROR: {str(e)}")
-        traceback.print_exc()
-        raise
-    except Exception as e:
-        print(f"Unexpected error during pre-processing: {str(e)}")
-        traceback.print_exc()
-        raise
-
+    # # only use the first 12 rows for testing
+    # df = df[:12]
 
 
     # =============== pre-process =============================================
     print('start pre processing data')
+    df = pd.read_csv(filename)
     email_data = df["message"].apply(extract)
     df = df.join(pd.DataFrame(email_data.tolist()))
     

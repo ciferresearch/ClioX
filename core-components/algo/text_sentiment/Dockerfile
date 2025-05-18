@@ -29,4 +29,4 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Command to run the application
-CMD ["python", "text_analysis.py"] 
+CMD ["sh", "/algorithm/entrypoint.sh"]
