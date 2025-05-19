@@ -9,8 +9,16 @@ COPY algorithm/tests /algorithm/tests
 COPY algorithm/requirements.txt /algorithm/requirements.txt
 COPY entrypoint.sh /algorithm/entrypoint.sh
 
+
+COPY algorithm/src/implementation/nltk_data /usr/share/nltk_data
+ENV NLTK_DATA=/usr/share/nltk_data
+
 # Install the dependencies from the requirements.txt file
 RUN pip install --no-cache-dir -r /algorithm/requirements.txt
+
+COPY algorithm/src/implementation/models/en_core_web_sm /usr/local/lib/python3.12/site-packages/en_core_web_sm
+RUN python -m spacy link en_core_web_sm en_core_web_sm
+
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1

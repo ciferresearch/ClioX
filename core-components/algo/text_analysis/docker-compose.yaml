@@ -2,6 +2,7 @@
 services:
   algorithm:
     build: .
+    container_name: text_analysis
     volumes:
       - ./_data/inputs:/data/inputs:ro
       - ./_data/ddos:/data/ddos:ro
