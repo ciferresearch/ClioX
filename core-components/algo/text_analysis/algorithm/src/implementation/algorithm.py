@@ -224,8 +224,11 @@ class Algorithm:
         
         # print("Job Details vars:", vars(self._job_details))
 
-        first_did = self._job_details.files.files[0].did
-        ddo = self._job_details.ddos[0]
+        # first_did = self._job_details.dids[0]
+        # filename = self._job_details.files[first_did][0]
+
+        # first_did = self._job_details.files.files[0].did
+        # ddo = self._job_details.ddos[0]
         input_files = self._job_details.files.files[0].input_files
         filename = str(input_files[0])
     
