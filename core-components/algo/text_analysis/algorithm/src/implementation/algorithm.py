@@ -234,9 +234,9 @@ class Algorithm:
     
         # =============== pre-process =============================================
         print('start pre processing data')
-        nltk.download('punkt_tab')
-        nltk.download('stopwords')
-        nltk.download('punkt')
+        # nltk.download('punkt_tab')
+        # nltk.download('stopwords')
+        # nltk.download('punkt')
         
         df = pd.read_csv(filename)
         email_data = df["message"].apply(self.extract)
