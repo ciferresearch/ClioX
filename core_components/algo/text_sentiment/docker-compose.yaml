@@ -1,0 +1,18 @@
+version: '3.9'
+
+services:
+  nlp-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nlp_dev
+    volumes:
+      - .:/algo       
+    working_dir: /algo
+    command: ["python", "algo/text_analysis.py"] 
+    environment:
+        DEV: 1
+        # TEST: 1
+        DIDS: '["eb60f87363a36a5ae5cb8373524a8fd976b0cc5f8c40a706c615b857ae0e2974"]'
+        secret: "1234"
+        TRANSFORMATION_DID: "1234"

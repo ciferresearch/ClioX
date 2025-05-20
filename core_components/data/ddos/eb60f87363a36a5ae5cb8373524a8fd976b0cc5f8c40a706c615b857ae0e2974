@@ -1,0 +1,83 @@
+{
+  "id": "did:op:eb60f87363a36a5ae5cb8373524a8fd976b0cc5f8c40a706c615b857ae0e2974",
+  "@context": [
+      "https://w3id.org/did/v1"
+  ],
+  "nftAddress": "0x4d83Ce61CcEC62327431a8031bc8a5464089e6c0",
+  "chainId": 32457,
+  "version": "4.1.0",
+  "metadata": {
+      "type": "dataset",
+      "name": "Red Wine Dataset",
+      "author": "Cortez et al., 2009",
+      "description": "A dataset related to red variant of the Portuguese Vinho Verde wine. For more details, consult: http://www.vinhoverde.pt/en/ or the reference [Cortez et al., 2009].  Due to privacy and logistic issues, only physicochemical (inputs) and sensory (the output) variables are available (e.g. there is no data about grape types, wine brand, wine selling price, etc.).\r\n\r\nContent:\r\n* **fixed_acidity**\r\n* **volatile_acidity**\r\n* **citric_acid**\r\n* **residual_sugar**\r\n* **chlorides**\r\n* **free_sulfur_dioxide**\r\n* **total_sulfur_dioxide**\r\n* **density**\r\n* **pH**\r\n* **sulphates**\r\n* **alcohol**\r\n* **quality**: score between 0 and 10\r\n* **color**: red or white\r\n",
+      "tags": [
+          "agriculture",
+          "wine",
+          "udl",
+          "tabular-data"
+      ],
+      "license": "CC-BY-4.0",
+      "links": [
+          "https://archive.ics.uci.edu/dataset/186/wine+quality"
+      ],
+      "created": "2025-02-13T12:01:55Z",
+      "updated": "2025-02-13T12:01:55Z"
+  },
+  "services": [
+      {
+          "id": "c67422d1c38e89c286448bcb685572b4f184e2b1127b2c12d95a1bcbf6d039ec",
+          "datatokenAddress": "0x2C6164bB760834A615b60976817d4D2c74912303",
+          "type": "compute",
+          "serviceEndpoint": "https://provider.agrospai.udl.cat",
+          "timeout": 0,
+          "files": "0x0425d69f964fd32e54ee45ffc986d3bee53c4db6227457129e756c218830d7a8426ad25814ef358ee08bf9dfcae187ae33c75f3853101fa96a1307e5fda4582f31efe13e8d745b516b321b8d39437268452282afede7b108db09432f3e647ca72620f16788ecf3a7eea03076a556bbd4229eb35c3188dc78a6d7b7f67f421a38bd99fdf530e15c79d979acc9d30246f558ab584a67eebcc0a2d25d3dedf0ffa82e5c72da75d53762949ab33e2276489a5983c0706863369500a970c2c1e75b538d2aee1397cf28eb7e842afe47a699da1e0dd7e590866a12fe87ce370736d431d8aca79770df2b4273c1b1425078e9e82711b7253de3e57ec0551c2940852ef027bd75f607047baf274b8a46b0ddb9a211f044a3710bc89e4abad5a38ae542126a5948f97b52f73cbffc98de813983bbd1457ba386a39d8c217f35683dee84bb2e2372530585d34c5ad7d32f2cf75f5602275e07a734da6cfe",
+          "compute": {
+              "allowNetworkAccess": false,
+              "allowRawAlgorithm": false,
+              "publisherTrustedAlgorithmPublishers": [
+                  "0xD999bAaE98AC5246568FD726be8832c49626867D"
+              ],
+              "publisherTrustedAlgorithms": []
+          }
+      }
+  ],
+  "credentials": {
+      "allow": [],
+      "deny": []
+  },
+  "event": {
+      "tx": "0x8c0d2946aa0311295f704b34ca9fb61854c431b9056dd9113d09666c96ae8f7e",
+      "block": 3957734,
+      "from": "0xD999bAaE98AC5246568FD726be8832c49626867D",
+      "contract": "0x4d83Ce61CcEC62327431a8031bc8a5464089e6c0",
+      "datetime": "2025-02-13T12:02:05"
+  },
+  "nft": {
+      "address": "0x4d83Ce61CcEC62327431a8031bc8a5464089e6c0",
+      "name": "Red Wine",
+      "symbol": "RED",
+      "state": 0,
+      "tokenURI": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Red_and_white_wine_12-2015.jpg/240px-Red_and_white_wine_12-2015.jpg",
+      "owner": "0xD999bAaE98AC5246568FD726be8832c49626867D",
+      "created": "2025-02-13T12:02:05"
+  },
+  "datatokens": [
+      {
+          "address": "0x2C6164bB760834A615b60976817d4D2c74912303",
+          "name": "Red Wine",
+          "symbol": "RED",
+          "serviceId": "c67422d1c38e89c286448bcb685572b4f184e2b1127b2c12d95a1bcbf6d039ec"
+      }
+  ],
+  "stats": {
+      "allocated": 0,
+      "orders": 2,
+      "price": {
+          "value": 0
+      }
+  },
+  "purgatory": {
+      "state": false
+  }
+}
