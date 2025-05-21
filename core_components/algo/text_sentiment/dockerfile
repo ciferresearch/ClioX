@@ -24,18 +24,6 @@
 # WORKDIR /algo
 
 
-# FROM username/app:latest
-
-# # 安装额外依赖
-# RUN pip install some-package
-
-# # 复制你自己的代码
-# COPY ./my_code /app/my_code
-
-# # 修改入口
-# CMD ["python", "/app/my_code/main.py"]
-
-
 FROM python:3.10-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
