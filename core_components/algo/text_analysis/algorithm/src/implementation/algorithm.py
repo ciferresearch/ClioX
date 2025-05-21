@@ -18,9 +18,11 @@ from presidio_analyzer import AnalyzerEngine
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import OperatorConfig
+from multiprocessing import Pool, cpu_count
+
 # import torch
 # from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from multiprocessing import Pool, cpu_count
+
 
 
 T = TypeVar("T")
