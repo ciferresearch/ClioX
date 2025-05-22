@@ -393,50 +393,45 @@ class Algorithm:
             
         return self
 
+    
     def save_result(self, path: Path) -> None:
-        # Create output directory if it doesn't exist
-        path.mkdir(parents=True, exist_ok=True)
+        wordcloud_path = path / "wordcloud.json"
+        document_summary_path = path / "document_summary.json"
+        email_distribution_path = path / "email_distribution.csv"
+        date_distribution_path = path / "date_distribution.csv"
+        sentiment_path = path / "sentiment.json"
+
+        with open(wordcloud_path, "w", encoding="utf-8") as f:
+            try:
+                json.dump(self.results['wordcloud'], f, indent=2)
+                logger.info(f"Saved wordcloud data to {wordcloud_path}")
+            except Exception as e:
+                logger.exception(f"Error saving wordcloud data: {e}")
+
+        with open(document_summary_path, "w", encoding="utf-8") as f:
+            try:
+                json.dump(self.results['document_summary'], f, indent=2)
+                logger.info(f"Saved document summary to {document_summary_path}")
+            except Exception as e:
+                logger.exception(f"Error saving document summary: {e}")
+
+        with open(email_distribution_path, "w", encoding="utf-8") as f:
+            try:
+                self.results['email_distribution'].to_csv(f, index=False)
+                logger.info(f"Saved email distribution to {email_distribution_path}")
+            except Exception as e:
+                logger.exception(f"Error saving email distribution: {e}")
+
+        with open(date_distribution_path, "w", encoding="utf-8") as f:
+            try:
+                self.results['date_distribution'].to_csv(f, index=False)
+                logger.info(f"Saved date distribution to {date_distribution_path}")
+            except Exception as e:
+                logger.exception(f"Error saving date distribution: {e}")
         
-        try:
-            # Save wordcloud data if available
-            if 'wordcloud' in self.results and self.results['wordcloud']:
-                wordcloud_path = path / "wordcloud.json"
-                with wordcloud_path.open("w", encoding="utf-8") as f:
-                    json.dump(self.results['wordcloud'], f, indent=2)
-                    logger.info(f"Saved wordcloud data to {wordcloud_path}")
-
-            # Save document summary if available
-            if 'document_summary' in self.results and self.results['document_summary']:
-                summary_path = path / "document_summary.json" 
-                with summary_path.open("w", encoding="utf-8") as f:
-                    json.dump(self.results['document_summary'], f, indent=2)
-                    logger.info(f"Saved document summary to {summary_path}")
-
-            # Save email distribution if available
-            if 'email_distribution' in self.results and isinstance(self.results['email_distribution'], pd.DataFrame):
-                email_dist_path = path / "email_distribution.csv"
-                self.results['email_distribution'].to_csv(email_dist_path, index=False)
-                logger.info(f"Saved email distribution to {email_dist_path}")
-            else:
-                logger.warning("Email distribution data not available or not in DataFrame format")
-
-            # Save date distribution if available
-            if 'date_distribution' in self.results and isinstance(self.results['date_distribution'], pd.DataFrame):
-                date_dist_path = path / "date_distribution.csv"
-                self.results['date_distribution'].to_csv(date_dist_path, index=False)
-                logger.info(f"Saved date distribution to {date_dist_path}")
-            else:
-                logger.warning("Date distribution data not available or not in DataFrame format")
-
-            # Save sentiment data if available
-            if 'sentiment' in self.results and self.results['sentiment']:
-                sentiment_path = path / "sentiment.json"
-                with sentiment_path.open("w", encoding="utf-8") as f:
-                    json.dump(self.results['sentiment'], f, indent=2) 
-                    logger.info(f"Saved sentiment data to {sentiment_path}")
-            else:
-                logger.warning("Sentiment data not available")
-                
-        except Exception as e:
-            logger.error(f"Error while saving results: {e}")
-            raise
+        with open(sentiment_path, "w", encoding="utf-8") as f:
+            try:
+                json.dump(self.results['sentiment'], f, indent=2)
+                logger.info(f"Saved sentiment to {sentiment_path}")
+            except Exception as e:
+                logger.exception(f"Error saving sentiment: {e}")
