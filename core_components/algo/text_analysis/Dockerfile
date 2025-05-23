@@ -1,5 +1,5 @@
 # FROM python:3.10-alpine
-FROM python:3.12-slim
+FROM --platform=linux/amd64 python:3.12-slim
 
 WORKDIR /algorithm
 
@@ -15,6 +15,8 @@ COPY entrypoint.sh /algorithm/entrypoint.sh
 # Install the dependencies from the requirements.txt file
 RUN pip install --no-cache-dir -r /algorithm/requirements.txt
 
+# Download NLTK data
+RUN python -c "import nltk; nltk.download('punkt_tab'); nltk.download('punkt'); nltk.download('stopwords')"
 
 # COPY algorithm/src/implementation/models/en_core_web_sm /usr/local/lib/python3.12/site-packages/en_core_web_sm
 # RUN python -m spacy link en_core_web_sm en_core_web_sm
