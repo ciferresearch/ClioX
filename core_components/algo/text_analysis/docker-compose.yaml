@@ -1,9 +1,10 @@
 # Use this docker-compose to test the algorithm locally
+
 services:
   algorithm:
     build: .
     container_name: text_analysis
-    image: chriswch/text-analysis:0.1.0
+    image: chriswch/text-analysis:0.2.0
     volumes:
       - ./_data/inputs:/data/inputs:ro
       - ./_data/ddos:/data/ddos:ro

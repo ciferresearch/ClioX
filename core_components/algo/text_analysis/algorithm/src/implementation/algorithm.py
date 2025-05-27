@@ -20,8 +20,8 @@ from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import OperatorConfig
 from multiprocessing import Pool, cpu_count
 
-# import torch
-# from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 
 
@@ -125,63 +125,63 @@ class Algorithm:
         return ' '.join(masked_text)
 
 
-    ### sentiment analysis over date time aggregation  
-    # def sentiment_classication(self, df):
-    #     # Initialize models only once as class attributes
-    #     if Algorithm.tokenizer is None:
-    #         Algorithm.tokenizer = AutoTokenizer.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
-    #         Algorithm.sentiment_classifier = AutoModelForSequenceClassification.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
-    #         Algorithm.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #         Algorithm.sentiment_classifier.to(Algorithm.device)
-    #         Algorithm.sentiment_classifier.eval()  # Set model to evaluation mode
+    ## sentiment analysis over date time aggregation  
+    def sentiment_classication(self, df):
+        # Initialize models only once as class attributes
+        if Algorithm.tokenizer is None:
+            Algorithm.tokenizer = AutoTokenizer.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
+            Algorithm.sentiment_classifier = AutoModelForSequenceClassification.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
+            Algorithm.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            Algorithm.sentiment_classifier.to(Algorithm.device)
+            Algorithm.sentiment_classifier.eval()  # Set model to evaluation mode
 
-    #     # 0 - very negative
-    #     # 1 - negative
-    #     # 2 - neutral
-    #     # 3 - positive
-    #     # 4 - very positive
+        # 0 - very negative
+        # 1 - negative
+        # 2 - neutral
+        # 3 - positive
+        # 4 - very positive
 
-    #     # Get the text data and clean it
-    #     raw_text = df.get('masked_text').tolist()
-    #     clean_text = [re.sub(r'[\r\n]+', '', raw) for raw in raw_text]
+        # Get the text data and clean it
+        raw_text = df.get('masked_text').tolist()
+        clean_text = [re.sub(r'[\r\n]+', '', raw) for raw in raw_text]
         
-    #     sentiment_Scores = []
-    #     sentiment_labels = []
+        sentiment_Scores = []
+        sentiment_labels = []
         
-    #     # Process in batches
-    #     batch_size = 16
-    #     for i in range(0, len(clean_text), batch_size):
-    #         batch_texts = clean_text[i:i+batch_size]
+        # Process in batches
+        batch_size = 16
+        for i in range(0, len(clean_text), batch_size):
+            batch_texts = clean_text[i:i+batch_size]
             
-    #         # Tokenize batch
-    #         tokens = Algorithm.tokenizer(batch_texts, padding=True, truncation=True, max_length=512, return_tensors="pt")
+            # Tokenize batch
+            tokens = Algorithm.tokenizer(batch_texts, padding=True, truncation=True, max_length=512, return_tensors="pt")
             
-    #         # Move tokens to device
-    #         tokens = {key: val.to(Algorithm.device) for key, val in tokens.items()}
+            # Move tokens to device
+            tokens = {key: val.to(Algorithm.device) for key, val in tokens.items()}
             
-    #         with torch.no_grad():
-    #             outputs = Algorithm.sentiment_classifier(**tokens)
+            with torch.no_grad():
+                outputs = Algorithm.sentiment_classifier(**tokens)
             
-    #         # Get scores for each text in batch
-    #         scores = outputs.logits.softmax(dim=1)
+            # Get scores for each text in batch
+            scores = outputs.logits.softmax(dim=1)
             
-    #         # Process each item in the batch
-    #         for score in scores:
-    #             sentiment_score = score.cpu().numpy().tolist()  # Move back to CPU and convert to list
-    #             sentiment_label = score.argmax().item()
+            # Process each item in the batch
+            for score in scores:
+                sentiment_score = score.cpu().numpy().tolist()  # Move back to CPU and convert to list
+                sentiment_label = score.argmax().item()
                 
-    #             sentiment_Scores.append(sentiment_score)
-    #             sentiment_labels.append(sentiment_label)
+                sentiment_Scores.append(sentiment_score)
+                sentiment_labels.append(sentiment_label)
         
-    #     # Add sentiment results directly to the original dataframe
-    #     df['sentiment_score'] = sentiment_Scores
-    #     df['sentiment_label'] = sentiment_labels
+        # Add sentiment results directly to the original dataframe
+        df['sentiment_score'] = sentiment_Scores
+        df['sentiment_label'] = sentiment_labels
         
-    #     # Create a new dataframe with only the needed columns for further processing
-    #     sentiment_df = df[['time', 'masked_text', 'sentiment_score', 'sentiment_label']].copy()
-    #     sentiment_df.rename(columns={'time': 'date'}, inplace=True)
+        # Create a new dataframe with only the needed columns for further processing
+        sentiment_df = df[['time', 'masked_text', 'sentiment_score', 'sentiment_label']].copy()
+        sentiment_df.rename(columns={'time': 'date'}, inplace=True)
         
-    #     return sentiment_df
+        return sentiment_df
 
     def process_chunk(self, chunk):
         # Process each chunk
@@ -225,13 +225,6 @@ class Algorithm:
         5. wordcloud.json
         '''
         
-        # print("Job Details vars:", vars(self._job_details))
-
-        # first_did = self._job_details.dids[0]
-        # filename = self._job_details.files[first_did][0]
-
-        # first_did = self._job_details.files.files[0].did
-        # ddo = self._job_details.ddos[0]
         input_files = self._job_details.files.files[0].input_files
         filename = str(input_files[0])
     
@@ -255,62 +248,61 @@ class Algorithm:
 
 
         # =============== sentiment analysis =============================================
-        # print('start sentiment analysis data')
-        # # sentiment df [OUTPUT]
-        # sentiment_df = self.sentiment_classication(df)
+        print('start sentiment analysis data')
+        # sentiment df [OUTPUT]
+        sentiment_df = self.sentiment_classication(df)
 
-        # # Group by date
-        # sentiment_df['date'] = pd.to_datetime(sentiment_df['date']).dt.date
+        # Group by date
+        sentiment_df['date'] = pd.to_datetime(sentiment_df['date']).dt.date
 
-        # # Create a pivot table with sentiment scores
-        # grouped = pd.pivot_table(
-        #     sentiment_df,
-        #     index='date',
-        #     values='sentiment_label',
-        #     aggfunc={
-        #         'sentiment_label': [
-        #             lambda x: sum(x == 0),  # Very negative (1 star)
-        #             lambda x: sum(x == 1),  # Negative (2 stars)
-        #             lambda x: sum(x == 2),  # Neutral (3 stars)
-        #             lambda x: sum(x == 3),  # Positive (4 stars)
-        #             lambda x: sum(x == 4),  # Very positive (5 stars)
-        #         ]
-        #     }
-        # ).reset_index()
+        # Create a pivot table with sentiment scores
+        grouped = pd.pivot_table(
+            sentiment_df,
+            index='date',
+            values='sentiment_label',
+            aggfunc={
+                'sentiment_label': [
+                    lambda x: sum(x == 0),  # Very negative (1 star)
+                    lambda x: sum(x == 1),  # Negative (2 stars)
+                    lambda x: sum(x == 2),  # Neutral (3 stars)
+                    lambda x: sum(x == 3),  # Positive (4 stars)
+                    lambda x: sum(x == 4),  # Very positive (5 stars)
+                ]
+            }
+        ).reset_index()
 
-        # # Check if grouped is empty
-        # if grouped.empty:
-        #     print("Warning: Sentiment data is empty after pivot_table operation")
-        #     output = []  # Initialize with empty list
-        # else:
-        #     # Rename columns
-        #     grouped.columns = ['date', '1', '2', '3', '4', '5']
+        # Check if grouped is empty
+        if grouped.empty:
+            print("Warning: Sentiment data is empty after pivot_table operation")
+            output = []  # Initialize with empty list
+        else:
+            # Rename columns
+            grouped.columns = ['date', '1', '2', '3', '4', '5']
 
-        #     # Add total and mean columns
-        #     grouped['total'] = grouped['1'] + grouped['2'] + grouped['3'] + grouped['4'] + grouped['5']
-        #     grouped['mean'] = (grouped['1']*1 + grouped['2']*2 + grouped['3']*3 + grouped['4']*4 + grouped['5']*5) / grouped['total']
+            # Add total and mean columns
+            grouped['total'] = grouped['1'] + grouped['2'] + grouped['3'] + grouped['4'] + grouped['5']
+            grouped['mean'] = (grouped['1']*1 + grouped['2']*2 + grouped['3']*3 + grouped['4']*4 + grouped['5']*5) / grouped['total']
 
-        #     # Convert to required JSON format
-        #     output = []
-        #     for col in grouped.columns[1:-2]:  # Exclude 'total' and 'mean'
-        #         try:
-        #             col_value = int(col)
-        #             # Map 1-5 column names to -2 to +2 sentiment scale
-        #             adjusted_value = col_value - 3
-        #             name = f"+{adjusted_value}" if adjusted_value > 0 else str(adjusted_value)
-        #         except ValueError:
-        #             print(f"Error converting column {col} to sentiment scale")
-        #             name = col  # Keep original name if conversion fails
+            # Convert to required JSON format
+            output = []
+            for col in grouped.columns[1:-2]:  # Exclude 'total' and 'mean'
+                try:
+                    col_value = int(col)
+                    # Map 1-5 column names to -2 to +2 sentiment scale
+                    adjusted_value = col_value - 3
+                    name = f"+{adjusted_value}" if adjusted_value > 0 else str(adjusted_value)
+                except ValueError:
+                    print(f"Error converting column {col} to sentiment scale")
+                    name = col  # Keep original name if conversion fails
 
-        #         output.append({
-        #             "name": name,
-        #             "values": [[day.strftime("%Y-%m-%dT00:00:00Z"), val] for day, val in zip(pd.to_datetime(grouped["date"]), grouped[col])]
-        #         })
+                output.append({
+                    "name": name,
+                    "values": [[day.strftime("%Y-%m-%dT00:00:00Z"), val] for day, val in zip(pd.to_datetime(grouped["date"]), grouped[col])]
+                })
 
-        # # Save sentiment data to results dictionary
-        # self.results['sentiment'] = output
+        # Save sentiment data to results dictionary
+        self.results['sentiment'] = output
 
-        # print("Sentiment data processed successfully")
 
         # =============== date distribution data =============================================
         print('start processing date distribution data')
