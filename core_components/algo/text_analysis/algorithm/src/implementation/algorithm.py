@@ -12,6 +12,7 @@ from email.parser import Parser
 import string
 import os
 from datetime import datetime
+from tqdm import tqdm
 
 from collections import Counter
 from presidio_analyzer import AnalyzerEngine
@@ -19,6 +20,7 @@ from presidio_analyzer.nlp_engine import NlpEngineProvider
 from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import OperatorConfig
 from multiprocessing import Pool, cpu_count
+
 
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -71,21 +73,6 @@ class Algorithm:
         
         return ' '.join(filtered_wrds_token)
 
-    # def nlp(self, text):
-    #     """Clean and tokenize text"""
-    #     # Remove HTML tags
-    #     clean = re.compile('<.*?>')
-    #     text = re.sub(clean, '', text)
-
-    #     # Split into words and sentences
-    #     sen_tokens = sent_tokenize(text)
-    #     wrd_tokens = word_tokenize(text.lower())
-
-    #     # Remove stopwords & punctuation
-    #     stopwords = set(nltk.corpus.stopwords.words('english'))
-    #     filtered_wrds_token = [word for word in wrd_tokens if word.isalnum() and word not in stopwords and word not in string.punctuation]
-        
-    #     return filtered_wrds_token, sen_tokens, ' '.join(filtered_wrds_token)
 
     def PII_detection_masking(self, text):
         # Cache the analyzer and anonymizer as static variables
@@ -126,62 +113,111 @@ class Algorithm:
 
 
     ## sentiment analysis over date time aggregation  
+    # def sentiment_classication(self, df):
+    #     # Initialize models only once as class attributes
+    #     if Algorithm.tokenizer is None:
+    #         Algorithm.tokenizer = AutoTokenizer.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
+    #         Algorithm.sentiment_classifier = AutoModelForSequenceClassification.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
+    #         Algorithm.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #         Algorithm.sentiment_classifier.to(Algorithm.device)
+    #         Algorithm.sentiment_classifier.eval()  # Set model to evaluation mode
+
+    #     # 0 - very negative
+    #     # 1 - negative
+    #     # 2 - neutral
+    #     # 3 - positive
+    #     # 4 - very positive
+
+    #     # Get the text data and clean it
+    #     raw_text = df.get('masked_text').tolist()
+    #     clean_text = [re.sub(r'[\r\n]+', '', raw) for raw in raw_text]
+        
+    #     sentiment_Scores = []
+    #     sentiment_labels = []
+        
+    #     # Process in batches
+    #     batch_size = 16
+    #     for i in range(0, len(clean_text), batch_size):
+    #         batch_texts = clean_text[i:i+batch_size]
+            
+    #         # Tokenize batch
+    #         tokens = Algorithm.tokenizer(batch_texts, padding=True, truncation=True, max_length=512, return_tensors="pt")
+            
+    #         # Move tokens to device
+    #         tokens = {key: val.to(Algorithm.device) for key, val in tokens.items()}
+            
+    #         with torch.no_grad():
+    #             outputs = Algorithm.sentiment_classifier(**tokens)
+            
+    #         # Get scores for each text in batch
+    #         scores = outputs.logits.softmax(dim=1)
+            
+    #         # Process each item in the batch
+    #         for score in scores:
+    #             sentiment_score = score.cpu().numpy().tolist()  # Move back to CPU and convert to list
+    #             sentiment_label = score.argmax().item()
+                
+    #             sentiment_Scores.append(sentiment_score)
+    #             sentiment_labels.append(sentiment_label)
+        
+    #     # Add sentiment results directly to the original dataframe
+    #     df['sentiment_score'] = sentiment_Scores
+    #     df['sentiment_label'] = sentiment_labels
+        
+    #     # Create a new dataframe with only the needed columns for further processing
+    #     sentiment_df = df[['time', 'masked_text', 'sentiment_score', 'sentiment_label']].copy()
+    #     sentiment_df.rename(columns={'time': 'date'}, inplace=True)
+        
+    #     return sentiment_df
+
+
     def sentiment_classication(self, df):
-        # Initialize models only once as class attributes
         if Algorithm.tokenizer is None:
             Algorithm.tokenizer = AutoTokenizer.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
             Algorithm.sentiment_classifier = AutoModelForSequenceClassification.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
-            Algorithm.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            Algorithm.sentiment_classifier.to(Algorithm.device)
-            Algorithm.sentiment_classifier.eval()  # Set model to evaluation mode
-
-        # 0 - very negative
-        # 1 - negative
-        # 2 - neutral
-        # 3 - positive
-        # 4 - very positive
+            Algorithm.sentiment_classifier.eval()
 
         # Get the text data and clean it
         raw_text = df.get('masked_text').tolist()
-        clean_text = [re.sub(r'[\r\n]+', '', raw) for raw in raw_text]
         
         sentiment_Scores = []
         sentiment_labels = []
         
-        # Process in batches
-        batch_size = 16
-        for i in range(0, len(clean_text), batch_size):
-            batch_texts = clean_text[i:i+batch_size]
+        batch_size = 4   
+        
+        for i in tqdm(range(0, len(raw_text), batch_size), desc="Processing sentiment"):
+            batch_texts = raw_text[i:i+batch_size]
             
-            # Tokenize batch
-            tokens = Algorithm.tokenizer(batch_texts, padding=True, truncation=True, max_length=512, return_tensors="pt")
-            
-            # Move tokens to device
-            tokens = {key: val.to(Algorithm.device) for key, val in tokens.items()}
+            # Tokenize batch with smaller max_length
+            tokens = Algorithm.tokenizer(
+                batch_texts, 
+                padding=True, 
+                truncation=True, 
+                max_length=256,  
+                return_tensors="pt"
+            )
             
             with torch.no_grad():
                 outputs = Algorithm.sentiment_classifier(**tokens)
             
-            # Get scores for each text in batch
             scores = outputs.logits.softmax(dim=1)
+            batch_scores = scores.numpy().tolist()
+            batch_labels = scores.argmax(dim=1).numpy().tolist()
             
-            # Process each item in the batch
-            for score in scores:
-                sentiment_score = score.cpu().numpy().tolist()  # Move back to CPU and convert to list
-                sentiment_label = score.argmax().item()
-                
-                sentiment_Scores.append(sentiment_score)
-                sentiment_labels.append(sentiment_label)
+            sentiment_Scores.extend(batch_scores)
+            sentiment_labels.extend(batch_labels)
+            
+            del tokens, outputs, scores
+            torch.cuda.empty_cache() if torch.cuda.is_available() else None
         
-        # Add sentiment results directly to the original dataframe
         df['sentiment_score'] = sentiment_Scores
         df['sentiment_label'] = sentiment_labels
         
-        # Create a new dataframe with only the needed columns for further processing
         sentiment_df = df[['time', 'masked_text', 'sentiment_score', 'sentiment_label']].copy()
         sentiment_df.rename(columns={'time': 'date'}, inplace=True)
         
         return sentiment_df
+
 
     def process_chunk(self, chunk):
         # Process each chunk
