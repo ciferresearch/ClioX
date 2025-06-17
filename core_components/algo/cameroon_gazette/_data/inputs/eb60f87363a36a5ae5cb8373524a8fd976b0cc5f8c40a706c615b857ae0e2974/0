@@ -1,0 +1,93 @@
+{
+  "Official_Gazette": "Republic of Cameroon",
+  "Date": "May 1994",
+  "Page": 41,
+  "Decrees": [
+    {
+      "Decree_No": "94/57",
+      "Date": "16 March 1994",
+      "Title_FR": "Décret portant nomination d’un chargé de mission au Cabinet Civil du Président de la République",
+      "Title_EN": "Appointment of Chargé de Mission at the Civil Cabinet of the President of the Republic",
+      "Appointee": {
+        "Name": "Mme. Onambélé née Amvuma Rose",
+        "Title": "professeur certifié",
+        "Position": "Chargé de Mission",
+        "Effective_Date": "16 March 1994"
+      },
+      "Articles": [
+        {
+          "Article_No": 1,
+          "Content_FR": "Est à compter de la date de signature du présent décret, nommée chargé de mission au Cabinet Civil du Président de la République : Mme. Onambélé née Amvuma Rose, professeur certifié.",
+          "Content_EN": "Mrs. Onambélé, née Rose Amvuma, High Schools Teacher, is, with effect from the date of signature of this decree, appointed Chargé de Mission at the Civil Cabinet of the President of the Republic."
+        },
+        {
+          "Article_No": 2,
+          "Content_FR": "Le présent décret sera enregistré puis publié au Journal Officiel en français et en anglais.",
+          "Content_EN": "This decree shall be registered and published in the Official Gazette in English and French."
+        }
+      ],
+      "Signed_By": "Paul BIYA",
+      "Location": "Yaoundé"
+    },
+    {
+      "Decree_No": "94/58",
+      "Date": "16 March 1994",
+      "Title_FR": "Décret portant nomination d’un attaché au Cabinet Civil du Président de la République",
+      "Title_EN": "Appointment of Attaché at the Civil Cabinet of the President of the Republic",
+      "Appointee": {
+        "Name": "M. Aboubakary Abdoulaye",
+        "Title": "administrateur Civil",
+        "Position": "Attaché",
+        "Effective_Date": "16 March 1994"
+      },
+      "Articles": [
+        {
+          "Article_No": 1,
+          "Content_FR": "Est à compter de la date de signature du présent décret, nommé attaché au cabinet civil du Président de la République : M. Aboubakary Abdoulaye, administrateur Civil.",
+          "Content_EN": "Mr. Aboubakary Abdoulaye, Administrative Officer, is, with effect from the date of signature of this decree, appointed Attaché at the Civil Cabinet of the President of the Republic."
+        },
+        {
+          "Article_No": 2,
+          "Content_FR": "Le présent décret sera enregistré puis publié au Journal Officiel en français et en anglais.",
+          "Content_EN": "This decree shall be registered and published in the Official Gazette in English and French."
+        }
+      ],
+      "Signed_By": "Paul BIYA",
+      "Location": "Yaoundé"
+    }
+  ],
+  "Orders": [
+    {
+      "Order_No": "14/PR",
+      "Date": "1 March 1994",
+      "Title_FR": "Arrêté portant nomination d’un greffier en chef",
+      "Title_EN": "Appointment",
+      "Appointee": {
+        "Name": "M. Kaptchouang Ngoupeyou Martin",
+        "Previous_Role": "Chef de service des affaires administratives et financières au Parquet général de la cour d’appel de Garoua",
+        "New_Role_FR": "greffier en chef du tribunal de première instance de Kaélé et du tribunal de grande instance du Mayo Kani",
+        "New_Role_EN": "Registrar-in-Chief of the Kaele Court to First Instance and the Mayo Kani High Court",
+        "Replacement": "M. Kamaha Kamaha André-Marius"
+      },
+      "Articles": [
+        {
+          "Article_No": 1,
+          "Content_FR": "M. Kaptchouang Ngoupeyou Martin... est nommé greffier en chef...",
+          "Content_EN": "Mr. Martin Kaptchouang Ngoupeyou... is hereby appointed Registrar-in-Chief..."
+        },
+        {
+          "Article_No": 2,
+          "Content_FR": "L’intéressé aura droit aux avantages de toute nature prévus par la réglementation en vigueur.",
+          "Content_EN": "Mr. Martin Kaptchouang Ngoupeyou shall be entitled to the various benefits provided for by the regulations in force."
+        },
+        {
+          "Article_No": 3,
+          "Content_FR": "Le présent arrêté sera enregistré puis publié au Journal Officiel en français et en anglais.",
+          "Content_EN": "This order shall be registered and published in the Official Gazette in English and French."
+        }
+      ],
+      "Signed_By": "Paul BIYA",
+      "Location": "Yaoundé"
+    }
+  ]
+}
