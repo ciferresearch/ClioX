@@ -54,57 +54,57 @@ class Algorithm:
         return ' '.join(filtered_wrds_token)
 
 
-    def sentiment_classication(self, df):
-        if Algorithm.tokenizer is None:
-            Algorithm.tokenizer = AutoTokenizer.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
-            Algorithm.sentiment_classifier = AutoModelForSequenceClassification.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
-            Algorithm.sentiment_classifier = Algorithm.sentiment_classifier.to(self.device)
-            Algorithm.sentiment_classifier.eval()
+    # def sentiment_classication(self, df):
+    #     if Algorithm.tokenizer is None:
+    #         Algorithm.tokenizer = AutoTokenizer.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
+    #         Algorithm.sentiment_classifier = AutoModelForSequenceClassification.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
+    #         Algorithm.sentiment_classifier = Algorithm.sentiment_classifier.to(self.device)
+    #         Algorithm.sentiment_classifier.eval()
 
-        # Get the text data and clean it
-        raw_text = df.get('content').tolist()
+    #     # Get the text data and clean it
+    #     raw_text = df.get('content').tolist()
         
-        sentiment_Scores = []
-        sentiment_labels = []
+    #     sentiment_Scores = []
+    #     sentiment_labels = []
         
-        batch_size = 4   
+    #     batch_size = 4   
         
-        for i in tqdm(range(0, len(raw_text), batch_size), desc="Processing sentiment"):
-            batch_texts = raw_text[i:i+batch_size]
+    #     for i in tqdm(range(0, len(raw_text), batch_size), desc="Processing sentiment"):
+    #         batch_texts = raw_text[i:i+batch_size]
             
-            # Tokenize batch with smaller max_length
-            tokens = Algorithm.tokenizer(
-                batch_texts, 
-                padding=True, 
-                truncation=True, 
-                max_length=256,  
-                return_tensors="pt"
-            )
+    #         # Tokenize batch with smaller max_length
+    #         tokens = Algorithm.tokenizer(
+    #             batch_texts, 
+    #             padding=True, 
+    #             truncation=True, 
+    #             max_length=256,  
+    #             return_tensors="pt"
+    #         )
             
-            # Move tokens to the same device as the model
-            tokens = {k: v.to(self.device) for k, v in tokens.items()}
+    #         # Move tokens to the same device as the model
+    #         tokens = {k: v.to(self.device) for k, v in tokens.items()}
             
-            with torch.no_grad():
-                outputs = Algorithm.sentiment_classifier(**tokens)
+    #         with torch.no_grad():
+    #             outputs = Algorithm.sentiment_classifier(**tokens)
             
-            scores = outputs.logits.softmax(dim=1)
-            # Move scores back to CPU for numpy conversion
-            batch_scores = scores.cpu().numpy().tolist()
-            batch_labels = scores.argmax(dim=1).cpu().numpy().tolist()
+    #         scores = outputs.logits.softmax(dim=1)
+    #         # Move scores back to CPU for numpy conversion
+    #         batch_scores = scores.cpu().numpy().tolist()
+    #         batch_labels = scores.argmax(dim=1).cpu().numpy().tolist()
             
-            sentiment_Scores.extend(batch_scores)
-            sentiment_labels.extend(batch_labels)
+    #         sentiment_Scores.extend(batch_scores)
+    #         sentiment_labels.extend(batch_labels)
             
-            del tokens, outputs, scores
-            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    #         del tokens, outputs, scores
+    #         torch.cuda.empty_cache() if torch.cuda.is_available() else None
         
-        df['sentiment_score'] = sentiment_Scores
-        df['sentiment_label'] = sentiment_labels
+    #     df['sentiment_score'] = sentiment_Scores
+    #     df['sentiment_label'] = sentiment_labels
         
-        sentiment_df = df[['time', 'content', 'sentiment_score', 'sentiment_label']].copy()
-        sentiment_df.rename(columns={'time': 'date'}, inplace=True)
+    #     sentiment_df = df[['time', 'content', 'sentiment_score', 'sentiment_label']].copy()
+    #     sentiment_df.rename(columns={'time': 'date'}, inplace=True)
         
-        return sentiment_df
+    #     return sentiment_df
 
 
     def process_chunk(self, chunk):
@@ -233,7 +233,7 @@ class Algorithm:
 
                 # Find tokens with highest attention scores (excluding [CLS], [SEP], [PAD])    
                 token_attention_pairs = [(token, attn) for token, attn in zip(input_tokens[1:], cls_attention)
-                                        if token not in ['[CLS]', '[SEP]', '[PAD]']]
+                                        if token not in ['[CLS]', '[SEP]', '[PAD]','.', ',', '!', '?', ';', ':', '"', "'", '(', ')', '[', ']', '{', '}', '-', '_', '=', '+', '*', '/', '\\', '|', '&', '%', '$', '#', '@', '~', '`', '^', '<', '>']]
                     
                 # If there are no valid tokens, use a fallback
                 if not token_attention_pairs:

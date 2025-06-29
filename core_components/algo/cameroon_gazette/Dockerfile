@@ -1,7 +1,7 @@
 # Dockerfile
-# ARG TARGETPLATFORM=linux/amd64
-# FROM --platform=${TARGETPLATFORM} python:3.11-slim
-FROM python:3.11-slim
+ARG TARGETPLATFORM=linux/amd64
+FROM --platform=${TARGETPLATFORM} python:3.11-slim
+# FROM python:3.11-slim
 
 
 WORKDIR /algorithm

@@ -3,9 +3,9 @@
 services:
   algorithm:
     build: .
-    container_name: text_analysis
+    container_name: gazette_analysis
     platform: linux/amd64
-    image: chriswch/text-analysis:0.2.0
+    image: chriswch/gazette-analysis:0.1.0
     volumes:
       - ./_data/inputs:/data/inputs:ro
       - ./_data/ddos:/data/ddos:ro
