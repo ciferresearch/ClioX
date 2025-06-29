@@ -198,6 +198,7 @@ class Algorithm:
         raw_text = df['content'].tolist()
         sentiment_scores = []
         sentiment_labels = []
+        sentiment_words = []
         
         batch_size = 4   
         
@@ -215,20 +216,44 @@ class Algorithm:
             tokens = {k: v.to(self.device) for k, v in tokens.items()}
             
             with torch.no_grad():
-                outputs = Algorithm.sentiment_classifier(**tokens)
+                outputs = Algorithm.sentiment_classifier(**tokens, output_attentions=True)
             
             scores = outputs.logits.softmax(dim=1)
             batch_scores = scores.cpu().numpy().tolist()
             batch_labels = scores.argmax(dim=1).cpu().numpy().tolist()
+
+            # Process attention for each text in the batch
+            batch_words = []
+            attention = outputs.attentions[-1].mean(dim=1)  # Average across attention heads
+            
+            for batch_idx in range(len(batch_texts)):
+                # Get attention for this specific text
+                cls_attention = attention[batch_idx, 0, 1:].cpu().detach().numpy()  # Skip [CLS] token
+                input_tokens = Algorithm.tokenizer.convert_ids_to_tokens(tokens['input_ids'][batch_idx])
+
+                # Find tokens with highest attention scores (excluding [CLS], [SEP], [PAD])    
+                token_attention_pairs = [(token, attn) for token, attn in zip(input_tokens[1:], cls_attention)
+                                        if token not in ['[CLS]', '[SEP]', '[PAD]']]
+                    
+                # If there are no valid tokens, use a fallback
+                if not token_attention_pairs:
+                    batch_words.append("")
+                else:
+                    # Sort by attention score and take top 3
+                    sorted_tokens = sorted(token_attention_pairs, key=lambda x: x[1], reverse=True)
+                    top_tokens = [token for token, _ in sorted_tokens[:3]]
+                    batch_words.append(", ".join(top_tokens))
             
             sentiment_scores.extend(batch_scores)
             sentiment_labels.extend(batch_labels)
+            sentiment_words.extend(batch_words)
             
-            del tokens, outputs, scores
+            del tokens, outputs, scores, attention
             torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
         df['sentiment_score'] = sentiment_scores
         df['sentiment_label'] = sentiment_labels
+        df['contribute_words'] = sentiment_words
 
         # Group by date for sentiment analysis
         sentiment_by_date = df.groupby(df['time'].dt.date)['sentiment_label'].agg([
@@ -254,12 +279,34 @@ class Algorithm:
             adjusted_value = int(col) - 3
             name = f"+{adjusted_value}" if adjusted_value > 0 else str(adjusted_value)
             
+            # Get sentiment label for this category
+            sentiment_label = int(col) - 1  # Convert to 0-4 range
+            
+            # Group by date and get words for each date
+            sentiment_by_date_with_words = []
+            for day in sentiment_by_date['time']:
+                day_texts = df[(df['sentiment_label'] == sentiment_label) & 
+                              (df['time'].dt.date == day)]['contribute_words'].tolist()
+                
+                # Flatten and collect all words for this date
+                all_words = []
+                for text in day_texts:
+                    if text and text != "error_processing":
+                        words = [word.strip() for word in text.split(',') if word.strip()]
+                        all_words.extend(words)
+                
+                # Get the count for this sentiment on this date
+                count = sentiment_by_date[sentiment_by_date['time'] == day][col].iloc[0]
+                
+                sentiment_by_date_with_words.append([
+                    day.strftime("%Y-%m-%dT00:00:00Z"),
+                    int(count),
+                    all_words
+                ])
+            
             sentiment_output.append({
                 "name": name,
-                "values": [
-                    [day.strftime("%Y-%m-%dT00:00:00Z"), int(val)] 
-                    for day, val in zip(sentiment_by_date['time'], sentiment_by_date[col])
-                ]
+                "values": sentiment_by_date_with_words
             })
 
         self.results['sentiment'] = sentiment_output
