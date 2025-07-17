@@ -27,7 +27,7 @@ def test_chatbot(job_details):
         }
       }
     ]
-    output_path = os.path.join(root, "data/outputs/result")
+    output_path = os.path.join(root, "data/outputs/result.json")
     with open(output_path, "w", encoding='utf-8') as f:
         json.dump(output_list, f, ensure_ascii=False, indent=2)
 
