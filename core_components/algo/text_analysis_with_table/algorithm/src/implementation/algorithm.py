@@ -315,7 +315,14 @@ class Algorithm:
         # =============== sentiment analysis =============================================
         print('start sentiment analysis data')
         # sentiment df [OUTPUT]
-        sentiment_df = self.sentiment_classication(df)
+        try:
+            # Lazy import to avoid circulars and keep module optional
+            from .sentiment import SentimentService
+            sentiment_service = SentimentService(self.sentiment_classication)
+            sentiment_df, _ = sentiment_service.run(df)
+        except Exception:
+            # Fallback to current in-file implementation if sentiment package unavailable
+            sentiment_df = self.sentiment_classication(df)
 
         # Group by date for sentiment analysis
         sentiment_by_date = sentiment_df.groupby(sentiment_df['date'].dt.date)['sentiment_label'].agg([
