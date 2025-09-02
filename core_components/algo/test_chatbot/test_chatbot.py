@@ -9,21 +9,25 @@ def test_chatbot(job_details):
     root = os.getenv('ROOT_FOLDER', '')
     output_list = [
       {
-        "id": "doc_001",
-        "content": "Web3 is the next generation of the internet, built on blockchain technology, where users have control over their data and content. Think of it like the difference between renting a house (Web2) and owning it (Web3). While Web2 platforms control your data and content, Web3 gives you the keys to your digital life—offering more privacy, transparency, and autonomy online.",
+        "id": "doc1_chunk1",
+        "content": "This is the introduction of the document. It explains the main concepts and objectives...",
         "metadata": {
-          "source": "doc1.pdf",
-          "category": "protocol_overview",
-          "tags": ["blockchain", "data", "privacy"]
+          "source": "business_report.pdf",
+          "page": 1,
+          "title": "Q3 Business Report",
+          "type": "pdf",
+          "section": "Introduction"
         }
       },
       {
-        "id": "doc_002",
-        "content": "In Greek mythology, Clio was the Muse of history, one of nine daughters of Zeus and Mnemosyne. She is reflected as having a role in preserving and making famous historical events and is often depicted with objects like scrolls, stone tablets or a lyre symbolizing her connection to history and storytelling.",
+        "id": "doc1_chunk1",
+        "content": "This is the introduction of the document. It explains the main concepts and objectives...",
         "metadata": {
-          "source": "doc2.pdf",
-          "category": "clio",
-          "tags": ["clio"]
+          "source": "business_report.pdf",
+          "page": 1,
+          "title": "Q3 Business Report",
+          "type": "pdf",
+          "section": "Introduction"
         }
       }
     ]
