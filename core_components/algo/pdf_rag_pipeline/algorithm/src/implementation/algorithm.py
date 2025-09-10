@@ -140,8 +140,8 @@ class Algorithm:
             with open(final_output_path, 'r', encoding='utf-8') as f:
                 self.results['final_output'] = json.load(f)
             print(f"\n✅ Pipeline completed successfully!")
-            print(f"📊 Processed {self.results['final_output']['metadata']['total_chunks_processed']} chunks")
-            print(f"📋 Extracted {self.results['final_output']['metadata']['total_sections_extracted']} sections")
+            print(f"📊 Processed {len(self.results['final_output'])} chunks")
+            print(f"📋 Extracted {len(self.results['final_output'])} sections")
         else:
             raise RuntimeError("Final structured output not found")
         
@@ -184,20 +184,22 @@ class Algorithm:
             except Exception as e:
                 logger.exception(f"Error saving processing status: {e}")
         
-        # Save individual sections as separate files for easier access
-        if 'final_output' in self.results and 'document_sections' in self.results['final_output']:
-            sections_dir = path / "sections"
-            sections_dir.mkdir(exist_ok=True)
+        # Save individual chunks as separate files for easier access
+        if 'final_output' in self.results and isinstance(self.results['final_output'], list):
+            chunks_dir = path / "chunks"
+            chunks_dir.mkdir(exist_ok=True)
             
-            for i, section in enumerate(self.results['final_output']['document_sections']):
-                section_path = sections_dir / f"section_{i:03d}_{section['title'][:50].replace('/', '_')}.json"
-                with open(section_path, "w", encoding="utf-8") as f:
+            for chunk in self.results['final_output']:
+                chunk_id = chunk['id']
+                section_name = chunk['metadata']['section'][:50].replace('/', '_').replace(':', '_')
+                chunk_path = chunks_dir / f"{chunk_id}_{section_name}.json"
+                with open(chunk_path, "w", encoding="utf-8") as f:
                     try:
-                        json.dump(section, f, indent=2, ensure_ascii=False)
+                        json.dump(chunk, f, indent=2, ensure_ascii=False)
                     except Exception as e:
-                        logger.exception(f"Error saving section {i}: {e}")
+                        logger.exception(f"Error saving chunk {chunk_id}: {e}")
             
-            logger.info(f"Saved {len(self.results['final_output']['document_sections'])} sections to {sections_dir}")
+            logger.info(f"Saved {len(self.results['final_output'])} chunks to {chunks_dir}")
         
         # Create a summary file
         summary_path = path / "pipeline_summary.txt"
@@ -211,10 +213,12 @@ class Algorithm:
                     f.write(f"Pipeline Version: {self.results['metadata'].get('pipeline_version', 'Unknown')}\n")
                     f.write(f"Processing Completed: {self.results['metadata'].get('processing_completed', False)}\n\n")
                 
-                if 'final_output' in self.results and 'metadata' in self.results['final_output']:
-                    output_meta = self.results['final_output']['metadata']
-                    f.write(f"Total Chunks Processed: {output_meta.get('total_chunks_processed', 0)}\n")
-                    f.write(f"Total Sections Extracted: {output_meta.get('total_sections_extracted', 0)}\n\n")
+                if 'final_output' in self.results and isinstance(self.results['final_output'], list):
+                    f.write(f"Total Structured Chunks: {len(self.results['final_output'])}\n")
+                    if self.results['final_output']:
+                        # Get source from first chunk metadata
+                        first_chunk = self.results['final_output'][0]
+                        f.write(f"Document Source: {first_chunk['metadata'].get('source', 'Unknown')}\n\n")
                 
                 if 'processing_status' in self.results:
                     f.write("Processing Status:\n")
