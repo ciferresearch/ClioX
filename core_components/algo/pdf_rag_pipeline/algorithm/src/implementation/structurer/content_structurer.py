@@ -2,55 +2,22 @@ from pathlib import Path
 import json
 import re
 
-def extract_sections(text):
-    """Extract sections from text based on common patterns."""
-    sections = []
+def extract_source_from_filename(chunk_filename):
+    """Extract original PDF source filename from chunk filename.
     
-    # Split by common section headers (you can customize these patterns)
-    section_patterns = [
-        r'\n\s*([A-Z][A-Z\s]{2,})\s*\n',  # ALL CAPS headers
-        r'\n\s*(\d+\.?\s+[A-Z][a-zA-Z\s]+)\s*\n',  # Numbered headers
-        r'\n\s*([A-Z][a-zA-Z\s]*:)\s*',  # Colon-terminated headers
-    ]
+    Chunk files are named: chunk_{pdf_stem}_{chunk_index}.txt
+    Example: chunk_document1_0.txt -> document1.pdf
+    """
+    # Remove 'chunk_' prefix and '.txt' suffix, then split by '_'
+    name_parts = chunk_filename.replace('chunk_', '').replace('.txt', '').split('_')
     
-    current_title = "Introduction"
-    current_content = ""
-    
-    lines = text.split('\n')
-    
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-            
-        # Check if this line looks like a header
-        is_header = False
-        for pattern in section_patterns:
-            match = re.match(pattern, f'\n{line}\n')
-            if match:
-                # Save previous section
-                if current_content.strip():
-                    sections.append({
-                        "title": current_title.strip(),
-                        "content": current_content.strip()
-                    })
-                
-                current_title = line
-                current_content = ""
-                is_header = True
-                break
-        
-        if not is_header:
-            current_content += line + " "
-    
-    # Add the last section
-    if current_content.strip():
-        sections.append({
-            "title": current_title.strip(),
-            "content": current_content.strip()
-        })
-    
-    return sections
+    # The last part is the chunk index, everything before is the PDF stem
+    if len(name_parts) >= 2:
+        pdf_stem = '_'.join(name_parts[:-1])  # Join all parts except the last (index)
+        return f"{pdf_stem}.pdf"
+    else:
+        # Fallback for unexpected naming
+        return "unknown.pdf"
 
 def structure_chunks(chunker_output_path):
     """Process chunk files and create RAG-optimized document chunks."""
@@ -69,14 +36,14 @@ def structure_chunks(chunker_output_path):
         # Create a simple chunk entry for the entire chunk content
         chunk_id = chunk_file.stem  # Use the filename as ID (e.g., "chunk_0_1")
         
-        # Try to extract a meaningful section title from the content
-        section_title = extract_meaningful_title(chunk_text)
+        # Extract the original PDF source from the chunk filename
+        source_filename = extract_source_from_filename(chunk_file.name)
         
         chunk_entry = {
             "id": chunk_id,
             "content": chunk_text,
             "metadata": {
-                "source": "0.pdf",  # Could be made dynamic
+                "source": source_filename, 
                 "page": extract_page_number(chunk_text),
                 "type": "pdf",
                 "word_count": len(chunk_text.split())
@@ -86,26 +53,6 @@ def structure_chunks(chunker_output_path):
         structured_output.append(chunk_entry)
     
     return structured_output
-
-def extract_meaningful_title(content):
-    """Try to extract a meaningful title from the content."""
-    lines = content.split('\n')
-    
-    # Look for potential titles in the first few lines
-    for line in lines[:3]:
-        line = line.strip()
-        if line and len(line) < 100:  # Reasonable title length
-            # Check if it looks like a title (capitalized, short, not a page marker)
-            if (line[0].isupper() and 
-                not line.startswith('---') and 
-                not line.startswith('ARCHIVARIA') and
-                not line.lower().startswith('this is') and
-                not line.lower().startswith('the ')):
-                return line
-    
-    # Fallback: use first few words of content
-    words = content.split()[:5]
-    return ' '.join(words) + '...' if len(words) == 5 else ' '.join(words)
 
 def extract_page_number(content):
     """Try to extract page number from content."""

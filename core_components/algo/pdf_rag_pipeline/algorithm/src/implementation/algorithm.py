@@ -10,6 +10,8 @@ import time
 import sys
 import shutil
 import os
+import zipfile
+import tempfile
 from pathlib import Path
 
 
@@ -30,6 +32,7 @@ class Algorithm:
         self._job_details = job_details
         self.results = {}  # Initialize as empty dictionary instead of None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.temp_dir = None  # For storing extracted zip contents
         logger.info(f"Using device: {self.device}")
 
     def _validate_input(self) -> None:
@@ -86,6 +89,67 @@ class Algorithm:
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
             print(f"📁 Working directory created: {directory}")
+
+    def extract_zip_if_needed(self, input_files):
+        """Extract zip files and return list of PDF files to process."""
+        pdf_files = []
+        
+        for input_file in input_files:
+            file_path = Path(input_file)
+            
+            # Check if this is a zip file
+            if file_path.suffix.lower() == '.zip':
+                print(f"📦 Extracting zip file: {file_path.name}")
+                
+                # Create temporary directory for extraction
+                if not self.temp_dir:
+                    self.temp_dir = tempfile.mkdtemp(prefix="pdf_rag_zip_")
+                    print(f"📁 Created temporary directory: {self.temp_dir}")
+                
+                temp_path = Path(self.temp_dir)
+                
+                # Extract zip file
+                try:
+                    with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                        zip_ref.extractall(temp_path)
+                        print(f"✅ Successfully extracted {file_path.name}")
+                        
+                        # Find all PDF files in extracted content
+                        extracted_pdfs = []
+                        for root, dirs, files in os.walk(temp_path):
+                            for file in files:
+                                if file.lower().endswith('.pdf'):
+                                    pdf_path = Path(root) / file
+                                    extracted_pdfs.append(pdf_path)
+                                    print(f"   📄 Found PDF: {file}")
+                        
+                        pdf_files.extend(extracted_pdfs)
+                        
+                except zipfile.BadZipFile:
+                    print(f"❌ Error: {file_path.name} is not a valid zip file")
+                    continue
+                except Exception as e:
+                    print(f"❌ Error extracting {file_path.name}: {str(e)}")
+                    continue
+                    
+            elif file_path.suffix.lower() == '.pdf':
+                # Direct PDF file
+                pdf_files.append(file_path)
+                print(f"📄 Found direct PDF: {file_path.name}")
+            else:
+                print(f"⚠️  Skipping unsupported file: {file_path.name}")
+        
+        return pdf_files
+
+    def cleanup_temp_files(self):
+        """Clean up temporary extraction directory."""
+        if self.temp_dir and os.path.exists(self.temp_dir):
+            try:
+                shutil.rmtree(self.temp_dir)
+                print(f"🧹 Cleaned up temporary directory: {self.temp_dir}")
+                self.temp_dir = None
+            except Exception as e:
+                print(f"⚠️  Warning: Could not clean up temp directory {self.temp_dir}: {str(e)}")
     
     def run(self) -> "Algorithm":
         # Initialize results dictionary
@@ -98,60 +162,71 @@ class Algorithm:
         self._validate_input()
         self.ensure_working_directories()
         
-        # Get input PDF files directly from Ocean Protocol
-        input_files = self._job_details.files.files[0].input_files
-        pdf_files = [Path(f) for f in input_files if Path(f).suffix.lower() == '.pdf']
+        try:
+            # Get input files from Ocean Protocol (can be PDFs or zip files)
+            input_files = self._job_details.files.files[0].input_files
+            print(f"📥 Processing {len(input_files)} input file(s)")
+            
+            # Extract zip files and collect all PDF files
+            pdf_files = self.extract_zip_if_needed(input_files)
+            
+            if not pdf_files:
+                raise ValueError("No PDF files found to process (checked both direct PDFs and zip file contents)")
+            
+            print(f"\n📄 Total PDF file(s) to process: {len(pdf_files)}")
+            for i, pdf_file in enumerate(pdf_files, 1):
+                print(f"   {i}. {pdf_file.name} (from {pdf_file.parent})")
         
-        if not pdf_files:
-            raise ValueError("No PDF files found to process")
-        
-        print(f"📄 Found {len(pdf_files)} PDF file(s) to process:")
-        for pdf_file in pdf_files:
-            print(f"   - {pdf_file.name} (from {pdf_file.parent})")
-        
-        # Run PDF RAG Pipeline in sequence
-        print("\n🚀 Starting PDF RAG Pipeline")
-        print("=" * 50)
-        
-        # Step 1: OCR Processing
-        print("\n📖 Step 1: OCR Processing")
-        print("-" * 30)
-        if not self.run_pipeline_step("ocr/ocr_processor.py", "OCR Processing", pdf_files):
-            raise RuntimeError("OCR processing failed")
-        self.results['processing_status']['ocr'] = 'completed'
-        
-        # Step 2: Text Chunking
-        print("\n✂️  Step 2: Text Chunking")
-        print("-" * 30)
-        if not self.run_pipeline_step("chunker/text_chunker.py", "Text Chunking"):
-            raise RuntimeError("Text chunking failed")
-        self.results['processing_status']['chunker'] = 'completed'
-        
-        # Step 3: Content Structuring
-        print("\n🏗️  Step 3: Content Structuring")
-        print("-" * 30)
-        if not self.run_pipeline_step("structurer/content_structurer.py", "Content Structuring"):
-            raise RuntimeError("Content structuring failed")
-        self.results['processing_status']['structurer'] = 'completed'
-        
-        # Load the final structured output
-        final_output_path = Path("/tmp/pipeline_work/final_output/structured_output.json")
-        if final_output_path.exists():
-            with open(final_output_path, 'r', encoding='utf-8') as f:
-                self.results['final_output'] = json.load(f)
-            print(f"\n✅ Pipeline completed successfully!")
-            print(f"📊 Processed {len(self.results['final_output'])} chunks")
-            print(f"📋 Extracted {len(self.results['final_output'])} sections")
-        else:
-            raise RuntimeError("Final structured output not found")
-        
-        # Add processing metadata
-        self.results['metadata'] = {
-            'pipeline_version': '1.0',
-            'processed_files': [f.name for f in pdf_files],
-            'total_processing_steps': 3,
-            'processing_completed': True
-        }
+            # Run PDF RAG Pipeline in sequence
+            print("\n🚀 Starting PDF RAG Pipeline")
+            print("=" * 50)
+            
+            # Step 1: OCR Processing
+            print("\n📖 Step 1: OCR Processing")
+            print("-" * 30)
+            if not self.run_pipeline_step("ocr/ocr_processor.py", "OCR Processing", pdf_files):
+                raise RuntimeError("OCR processing failed")
+            self.results['processing_status']['ocr'] = 'completed'
+            
+            # Step 2: Text Chunking
+            print("\n✂️  Step 2: Text Chunking")
+            print("-" * 30)
+            if not self.run_pipeline_step("chunker/text_chunker.py", "Text Chunking"):
+                raise RuntimeError("Text chunking failed")
+            self.results['processing_status']['chunker'] = 'completed'
+            
+            # Step 3: Content Structuring
+            print("\n🏗️  Step 3: Content Structuring")
+            print("-" * 30)
+            if not self.run_pipeline_step("structurer/content_structurer.py", "Content Structuring"):
+                raise RuntimeError("Content structuring failed")
+            self.results['processing_status']['structurer'] = 'completed'
+            
+            # Load the final structured output
+            final_output_path = Path("/tmp/pipeline_work/final_output/structured_output.json")
+            if final_output_path.exists():
+                with open(final_output_path, 'r', encoding='utf-8') as f:
+                    self.results['final_output'] = json.load(f)
+                print(f"\n✅ Pipeline completed successfully!")
+                print(f"📊 Processed {len(self.results['final_output'])} chunks")
+                print(f"📋 Extracted {len(self.results['final_output'])} sections")
+            else:
+                raise RuntimeError("Final structured output not found")
+            
+            # Add processing metadata
+            self.results['metadata'] = {
+                'pipeline_version': '1.0',
+                'processed_files': [f.name for f in pdf_files],
+                'total_processing_steps': 3,
+                'processing_completed': True,
+                'total_files_processed': len(pdf_files),
+                'extraction_method': 'zip' if self.temp_dir else 'direct'
+            }
+                
+        finally:
+            # Always cleanup temporary files even though the tmp is not mounted in docker container to ensure the file not accumulate in the entire lifetime 
+            # it can be skiped tho
+            self.cleanup_temp_files()
             
         return self
     
