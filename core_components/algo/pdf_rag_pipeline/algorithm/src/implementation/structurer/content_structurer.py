@@ -79,7 +79,6 @@ def structure_chunks(chunker_output_path):
                 "source": "0.pdf",  # Could be made dynamic
                 "page": extract_page_number(chunk_text),
                 "type": "pdf",
-                "section": section_title,
                 "word_count": len(chunk_text.split())
             }
         }

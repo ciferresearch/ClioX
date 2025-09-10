@@ -166,65 +166,65 @@ class Algorithm:
             except Exception as e:
                 logger.exception(f"Error saving structured output: {e}")
         
-        # Save processing metadata
-        metadata_path = path / "processing_metadata.json"
-        with open(metadata_path, "w", encoding="utf-8") as f:
-            try:
-                json.dump(self.results['metadata'], f, indent=2)
-                logger.info(f"Saved processing metadata to {metadata_path}")
-            except Exception as e:
-                logger.exception(f"Error saving metadata: {e}")
+        # # Save processing metadata
+        # metadata_path = path / "processing_metadata.json"
+        # with open(metadata_path, "w", encoding="utf-8") as f:
+        #     try:
+        #         json.dump(self.results['metadata'], f, indent=2)
+        #         logger.info(f"Saved processing metadata to {metadata_path}")
+        #     except Exception as e:
+        #         logger.exception(f"Error saving metadata: {e}")
         
-        # Save processing status
-        status_path = path / "processing_status.json"
-        with open(status_path, "w", encoding="utf-8") as f:
-            try:
-                json.dump(self.results['processing_status'], f, indent=2)
-                logger.info(f"Saved processing status to {status_path}")
-            except Exception as e:
-                logger.exception(f"Error saving processing status: {e}")
+        # # Save processing status
+        # status_path = path / "processing_status.json"
+        # with open(status_path, "w", encoding="utf-8") as f:
+        #     try:
+        #         json.dump(self.results['processing_status'], f, indent=2)
+        #         logger.info(f"Saved processing status to {status_path}")
+        #     except Exception as e:
+        #         logger.exception(f"Error saving processing status: {e}")
         
-        # Save individual chunks as separate files for easier access
-        if 'final_output' in self.results and isinstance(self.results['final_output'], list):
-            chunks_dir = path / "chunks"
-            chunks_dir.mkdir(exist_ok=True)
+        # # Save individual chunks as separate files for easier access
+        # if 'final_output' in self.results and isinstance(self.results['final_output'], list):
+        #     chunks_dir = path / "chunks"
+        #     chunks_dir.mkdir(exist_ok=True)
             
-            for chunk in self.results['final_output']:
-                chunk_id = chunk['id']
-                section_name = chunk['metadata']['section'][:50].replace('/', '_').replace(':', '_')
-                chunk_path = chunks_dir / f"{chunk_id}_{section_name}.json"
-                with open(chunk_path, "w", encoding="utf-8") as f:
-                    try:
-                        json.dump(chunk, f, indent=2, ensure_ascii=False)
-                    except Exception as e:
-                        logger.exception(f"Error saving chunk {chunk_id}: {e}")
+        #     for chunk in self.results['final_output']:
+        #         chunk_id = chunk['id']
+        #         section_name = chunk['metadata']['section'][:50].replace('/', '_').replace(':', '_')
+        #         chunk_path = chunks_dir / f"{chunk_id}_{section_name}.json"
+        #         with open(chunk_path, "w", encoding="utf-8") as f:
+        #             try:
+        #                 json.dump(chunk, f, indent=2, ensure_ascii=False)
+        #             except Exception as e:
+        #                 logger.exception(f"Error saving chunk {chunk_id}: {e}")
             
-            logger.info(f"Saved {len(self.results['final_output'])} chunks to {chunks_dir}")
+        #     logger.info(f"Saved {len(self.results['final_output'])} chunks to {chunks_dir}")
         
-        # Create a summary file
-        summary_path = path / "pipeline_summary.txt"
-        with open(summary_path, "w", encoding="utf-8") as f:
-            try:
-                f.write("PDF RAG Pipeline Processing Summary\n")
-                f.write("=" * 40 + "\n\n")
+        # # Create a summary file
+        # summary_path = path / "pipeline_summary.txt"
+        # with open(summary_path, "w", encoding="utf-8") as f:
+        #     try:
+        #         f.write("PDF RAG Pipeline Processing Summary\n")
+        #         f.write("=" * 40 + "\n\n")
                 
-                if 'metadata' in self.results:
-                    f.write(f"Processed Files: {', '.join(self.results['metadata'].get('processed_files', []))}\n")
-                    f.write(f"Pipeline Version: {self.results['metadata'].get('pipeline_version', 'Unknown')}\n")
-                    f.write(f"Processing Completed: {self.results['metadata'].get('processing_completed', False)}\n\n")
+        #         if 'metadata' in self.results:
+        #             f.write(f"Processed Files: {', '.join(self.results['metadata'].get('processed_files', []))}\n")
+        #             f.write(f"Pipeline Version: {self.results['metadata'].get('pipeline_version', 'Unknown')}\n")
+        #             f.write(f"Processing Completed: {self.results['metadata'].get('processing_completed', False)}\n\n")
                 
-                if 'final_output' in self.results and isinstance(self.results['final_output'], list):
-                    f.write(f"Total Structured Chunks: {len(self.results['final_output'])}\n")
-                    if self.results['final_output']:
-                        # Get source from first chunk metadata
-                        first_chunk = self.results['final_output'][0]
-                        f.write(f"Document Source: {first_chunk['metadata'].get('source', 'Unknown')}\n\n")
+        #         if 'final_output' in self.results and isinstance(self.results['final_output'], list):
+        #             f.write(f"Total Structured Chunks: {len(self.results['final_output'])}\n")
+        #             if self.results['final_output']:
+        #                 # Get source from first chunk metadata
+        #                 first_chunk = self.results['final_output'][0]
+        #                 f.write(f"Document Source: {first_chunk['metadata'].get('source', 'Unknown')}\n\n")
                 
-                if 'processing_status' in self.results:
-                    f.write("Processing Status:\n")
-                    for step, status in self.results['processing_status'].items():
-                        f.write(f"  - {step.upper()}: {status}\n")
+        #         if 'processing_status' in self.results:
+        #             f.write("Processing Status:\n")
+        #             for step, status in self.results['processing_status'].items():
+        #                 f.write(f"  - {step.upper()}: {status}\n")
                 
-                logger.info(f"Saved pipeline summary to {summary_path}")
-            except Exception as e:
-                logger.exception(f"Error saving summary: {e}")
+        #         logger.info(f"Saved pipeline summary to {summary_path}")
+        #     except Exception as e:
+        #         logger.exception(f"Error saving summary: {e}")
