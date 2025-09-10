@@ -5,7 +5,7 @@ services:
     build: .
     container_name: algo
     platform: linux/amd64
-    image: chriswch/gazette-rag:0.1.0
+    image: chriswch/gazette-rag:0.1.1
     volumes:
       - ./_data/inputs:/data/inputs:ro
       - ./_data/ddos:/data/ddos:ro
