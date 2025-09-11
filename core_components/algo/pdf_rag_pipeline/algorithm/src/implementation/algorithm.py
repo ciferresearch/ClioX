@@ -39,6 +39,17 @@ class Algorithm:
         if not self._job_details.files:
             logger.warning("No files found")
             raise ValueError("No files found")
+        
+        # Debug Ocean Protocol job details
+        print(f"🐙 Ocean Protocol Debug Info:")
+        print(f"   Files object: {self._job_details.files}")
+        print(f"   Number of file groups: {len(self._job_details.files.files) if self._job_details.files.files else 0}")
+        if self._job_details.files.files:
+            for i, file_group in enumerate(self._job_details.files.files):
+                print(f"   File group {i}: {file_group}")
+                print(f"   Input files: {file_group.input_files}")
+        print(f"   Job details type: {type(self._job_details)}")
+        print(f"   Available attributes: {dir(self._job_details)}")
 
     def run_pipeline_step(self, script_name, step_name, input_paths=None):
         """Run a pipeline step directly (no docker-compose needed in single image)."""
@@ -90,54 +101,73 @@ class Algorithm:
             directory.mkdir(parents=True, exist_ok=True)
             print(f"📁 Working directory created: {directory}")
 
-    def extract_zip_if_needed(self, input_files):
+    def resolve_ocean_protocol_files(self, input_file_refs):
+        """Resolve Ocean Protocol file references to actual file paths."""
+        resolved_files = []
+        
+        print(f"🔍 Resolving Ocean Protocol file references: {input_file_refs}")
+        
+        inputs_dir = Path("/data/inputs")
+        
+        hash_dirs = [d for d in inputs_dir.iterdir() if d.is_dir()]
+        hash_dir = hash_dirs[0]  # Take the first hash directory
+        print(f"📁 Found hash directory: {hash_dir.name}")
+        
+        zero_file = hash_dir / "0"
+        print(f"📄 Found Ocean Protocol file: {zero_file}")
+        resolved_files.append(zero_file)
+        
+        if resolved_files:
+            print(f"✅ Successfully resolved {len(resolved_files)} file(s)")
+        else:
+            print("❌ No files found in Ocean Protocol data directory")
+        
+        return resolved_files
+
+    def extract_zip(self, input_files):
         """Extract zip files and return list of PDF files to process."""
         pdf_files = []
         
         for input_file in input_files:
             file_path = Path(input_file)
             
-            # Check if this is a zip file
-            if file_path.suffix.lower() == '.zip':
-                print(f"📦 Extracting zip file: {file_path.name}")
+            print(f"📦 Extracting zip file: {file_path.name}")
+            
+            # Ocean Protocol always provides zip files without extension
+
+               
                 
-                # Create temporary directory for extraction
-                if not self.temp_dir:
-                    self.temp_dir = tempfile.mkdtemp(prefix="pdf_rag_zip_")
-                    print(f"📁 Created temporary directory: {self.temp_dir}")
-                
-                temp_path = Path(self.temp_dir)
-                
-                # Extract zip file
-                try:
-                    with zipfile.ZipFile(file_path, 'r') as zip_ref:
-                        zip_ref.extractall(temp_path)
-                        print(f"✅ Successfully extracted {file_path.name}")
-                        
-                        # Find all PDF files in extracted content
-                        extracted_pdfs = []
-                        for root, dirs, files in os.walk(temp_path):
-                            for file in files:
-                                if file.lower().endswith('.pdf'):
-                                    pdf_path = Path(root) / file
-                                    extracted_pdfs.append(pdf_path)
-                                    print(f"   📄 Found PDF: {file}")
-                        
-                        pdf_files.extend(extracted_pdfs)
-                        
-                except zipfile.BadZipFile:
-                    print(f"❌ Error: {file_path.name} is not a valid zip file")
-                    continue
-                except Exception as e:
-                    print(f"❌ Error extracting {file_path.name}: {str(e)}")
-                    continue
+            # Create temporary directory for extraction
+            if not self.temp_dir:
+                self.temp_dir = tempfile.mkdtemp(prefix="pdf_rag_zip_")
+                print(f"📁 Created temporary directory: {self.temp_dir}")
+            
+            temp_path = Path(self.temp_dir)
+            
+            # Extract zip file
+            try:
+                with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                    zip_ref.extractall(temp_path)
+                    print(f"✅ Successfully extracted {file_path.name}")
                     
-            elif file_path.suffix.lower() == '.pdf':
-                # Direct PDF file
-                pdf_files.append(file_path)
-                print(f"📄 Found direct PDF: {file_path.name}")
-            else:
-                print(f"⚠️  Skipping unsupported file: {file_path.name}")
+                    # Find all PDF files in extracted content
+                    extracted_pdfs = []
+                    for root, dirs, files in os.walk(temp_path):
+                        for file in files:
+                            if file.lower().endswith('.pdf'):
+                                pdf_path = Path(root) / file
+                                extracted_pdfs.append(pdf_path)
+                                print(f"   📄 Found PDF: {file}")
+                    
+                    pdf_files.extend(extracted_pdfs)
+                    
+            except zipfile.BadZipFile:
+                print(f"❌ Error: {file_path.name} is not a valid zip file")
+                continue
+            except Exception as e:
+                print(f"❌ Error extracting {file_path.name}: {str(e)}")
+                continue
+                    
         
         return pdf_files
 
@@ -164,11 +194,17 @@ class Algorithm:
         
         try:
             # Get input files from Ocean Protocol (can be PDFs or zip files)
-            input_files = self._job_details.files.files[0].input_files
-            print(f"📥 Processing {len(input_files)} input file(s)")
+            input_file_refs = self._job_details.files.files[0].input_files
+            print(f"📥 Processing {len(input_file_refs)} input file reference(s): {input_file_refs}")
+            
+            # Resolve Ocean Protocol file references to actual file paths
+            resolved_files = self.resolve_ocean_protocol_files(input_file_refs)
+            
+            if not resolved_files:
+                raise ValueError("No files found in Ocean Protocol data directories")
             
             # Extract zip files and collect all PDF files
-            pdf_files = self.extract_zip_if_needed(input_files)
+            pdf_files = self.extract_zip(resolved_files)
             
             if not pdf_files:
                 raise ValueError("No PDF files found to process (checked both direct PDFs and zip file contents)")
