@@ -124,51 +124,86 @@ class Algorithm:
         
         return resolved_files
 
-    def extract_zip(self, input_files):
+    def detect_file_type(self, file_path):
+        """Detect if a file is PDF, zip, or other type based on content, not just extension."""
+        try:
+            file_path = Path(file_path)
+            
+            # Read first few bytes to check file signature
+            with open(file_path, 'rb') as f:
+                header = f.read(10)
+            
+            # Check for PDF signature
+            if header.startswith(b'%PDF'):
+                return 'pdf'
+            
+            # Check for ZIP signature (PK)
+            if header.startswith(b'PK') or \
+            header.startswith(b'PK\x03\x04') or \
+            header.startswith(b'PK\x05\x06') or \
+            header.startswith(b'PK\x07\x08'):
+                return 'zip'
+            
+            return 'unknown'
+        
+        except Exception:
+            print(f"⚠️  Warning: Could not detect file type for {file_path}: {e}")
+            return 'unknown'
+
+    def extract_files(self, input_files):
         """Extract zip files and return list of PDF files to process."""
         pdf_files = []
         
         for input_file in input_files:
             file_path = Path(input_file)
             
-            print(f"📦 Extracting zip file: {file_path.name}")
+            # First, detect the actual file type
+            file_type = self.detect_file_type(file_path)
+            print(f"� Analyzing file: {file_path.name} -> Type: {file_type}")
             
-            # Ocean Protocol always provides zip files without extension
-
-               
+            if file_type == 'pdf':
+                # Direct PDF file - add it directly
+                pdf_files.append(file_path)
+                print(f"✅ Added PDF file directly: {file_path.name}")
                 
-            # Create temporary directory for extraction
-            if not self.temp_dir:
-                self.temp_dir = tempfile.mkdtemp(prefix="pdf_rag_zip_")
-                print(f"📁 Created temporary directory: {self.temp_dir}")
-            
-            temp_path = Path(self.temp_dir)
-            
-            # Extract zip file
-            try:
-                with zipfile.ZipFile(file_path, 'r') as zip_ref:
-                    zip_ref.extractall(temp_path)
-                    print(f"✅ Successfully extracted {file_path.name}")
+            elif file_type == 'zip':
+                # Zip file containing PDFs
+                print(f"�📦 Extracting zip file: {file_path.name}")
+                            
+                # Create temporary directory for extraction
+                if not self.temp_dir:
+                    self.temp_dir = tempfile.mkdtemp(prefix="pdf_rag_zip_")
+                    print(f"📁 Created temporary directory: {self.temp_dir}")
+                
+                temp_path = Path(self.temp_dir)
+                
+                # Extract zip file
+                try:
+                    with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                        zip_ref.extractall(temp_path)
+                        print(f"✅ Successfully extracted {file_path.name}")
+                        
+                        # Find all PDF files in extracted content
+                        extracted_pdfs = []
+                        for root, dirs, files in os.walk(temp_path):
+                            for file in files:
+                                if file.lower().endswith('.pdf'):
+                                    pdf_path = Path(root) / file
+                                    extracted_pdfs.append(pdf_path)
+                                    print(f"   📄 Found PDF: {file}")
+                        
+                        pdf_files.extend(extracted_pdfs)
+                        
+                except zipfile.BadZipFile:
+                    print(f"❌ Error: {file_path.name} is not a valid zip file")
+                    continue
+                except Exception as e:
+                    print(f"❌ Error extracting {file_path.name}: {str(e)}")
+                    continue
                     
-                    # Find all PDF files in extracted content
-                    extracted_pdfs = []
-                    for root, dirs, files in os.walk(temp_path):
-                        for file in files:
-                            if file.lower().endswith('.pdf'):
-                                pdf_path = Path(root) / file
-                                extracted_pdfs.append(pdf_path)
-                                print(f"   📄 Found PDF: {file}")
-                    
-                    pdf_files.extend(extracted_pdfs)
-                    
-            except zipfile.BadZipFile:
-                print(f"❌ Error: {file_path.name} is not a valid zip file")
-                continue
-            except Exception as e:
-                print(f"❌ Error extracting {file_path.name}: {str(e)}")
-                continue
-                    
-        
+            else:
+                print(f"⚠️  Skipping unsupported file type: {file_path.name} (detected as {file_type})")
+
         return pdf_files
 
     def cleanup_temp_files(self):
@@ -204,7 +239,7 @@ class Algorithm:
                 raise ValueError("No files found in Ocean Protocol data directories")
             
             # Extract zip files and collect all PDF files
-            pdf_files = self.extract_zip(resolved_files)
+            pdf_files = self.extract_files(resolved_files)
             
             if not pdf_files:
                 raise ValueError("No PDF files found to process (checked both direct PDFs and zip file contents)")
