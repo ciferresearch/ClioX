@@ -12,6 +12,8 @@ import shutil
 import os
 import zipfile
 import tempfile
+import gc
+import psutil
 from pathlib import Path
 
 
@@ -33,7 +35,27 @@ class Algorithm:
         self.results = {}  # Initialize as empty dictionary instead of None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.temp_dir = None  # For storing extracted zip contents
+        self.processed_files = []  # Track processed files for recovery
+        self.processing_stats = {}  # Track processing statistics
         logger.info(f"Using device: {self.device}")
+
+    def get_memory_usage(self):
+        """Get current memory usage in MB."""
+        process = psutil.Process(os.getpid())
+        memory_info = process.memory_info()
+        return memory_info.rss / 1024 / 1024  # Convert to MB
+
+    def cleanup_memory(self):
+        """Force garbage collection and memory cleanup."""
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        
+    def log_memory_usage(self, stage=""):
+        """Log current memory usage."""
+        memory_mb = self.get_memory_usage()
+        print(f"🔍 Memory usage {stage}: {memory_mb:.2f} MB")
+        return memory_mb
 
     def _validate_input(self) -> None:
         if not self._job_details.files:
@@ -146,7 +168,7 @@ class Algorithm:
             
             return 'unknown'
         
-        except Exception:
+        except Exception as e:
             print(f"⚠️  Warning: Could not detect file type for {file_path}: {e}")
             return 'unknown'
 
@@ -206,6 +228,213 @@ class Algorithm:
 
         return pdf_files
 
+    def extract_and_process_files_streaming(self, input_files):
+        """Stream process files one at a time to minimize memory usage."""
+        total_processed = 0
+        total_failed = 0
+        failed_files = []
+        
+        for input_file in input_files:
+            file_path = Path(input_file)
+            
+            # Log memory usage before processing each file
+            self.log_memory_usage(f"before processing {file_path.name}")
+            
+            # First, detect the actual file type
+            file_type = self.detect_file_type(file_path)
+            print(f"📄 Analyzing file: {file_path.name} -> Type: {file_type}")
+            
+            if file_type == 'pdf':
+                # Direct PDF file - process it immediately
+                try:
+                    success = self.process_single_pdf(file_path)
+                    if success:
+                        total_processed += 1
+                        self.processed_files.append(file_path.name)
+                        # print(f"✅ Processed PDF file: {file_path.name}")
+                    else:
+                        total_failed += 1
+                        failed_files.append(file_path.name)
+                        print(f"❌ Failed to process PDF file: {file_path.name}")
+                except Exception as e:
+                    total_failed += 1
+                    failed_files.append(file_path.name)
+                    print(f"❌ Exception processing PDF file {file_path.name}: {str(e)}")
+                
+            elif file_type == 'zip':
+                # Process zip file entries one at a time
+                print(f"📦 Processing zip file: {file_path.name}")
+                
+                try:
+                    with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                        # Get list of PDF files in the zip
+                        pdf_entries = [name for name in zip_ref.namelist() 
+                                     if name.lower().endswith('.pdf') and not name.startswith('__MACOSX/')]
+                        
+                        print(f"📋 Found {len(pdf_entries)} PDF files in zip")
+                        
+                        # Process each PDF individually
+                        for pdf_entry in pdf_entries:
+                            try:
+                                print(f"🔄 Extracting and processing: {pdf_entry}")
+                                self.log_memory_usage(f"before {pdf_entry}")
+                                
+                                # Create temporary file for this single PDF
+                                with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
+                                    temp_pdf.write(zip_ref.read(pdf_entry))
+                                    temp_pdf_path = Path(temp_pdf.name)
+                                
+                                # Process the single PDF
+                                success = self.process_single_pdf(temp_pdf_path, source_name=pdf_entry)
+                                
+                                if success:
+                                    total_processed += 1
+                                    self.processed_files.append(pdf_entry)
+                                    print(f"✅ Processed: {pdf_entry}")
+                                else:
+                                    total_failed += 1
+                                    failed_files.append(pdf_entry)
+                                    print(f"❌ Failed to process: {pdf_entry}")
+                                
+                                # Immediate cleanup of temporary file
+                                try:
+                                    temp_pdf_path.unlink()
+                                except:
+                                    pass
+                                
+                                # Force memory cleanup after each PDF
+                                self.cleanup_memory()
+                                self.log_memory_usage(f"after {pdf_entry}")
+                                
+                            except Exception as e:
+                                total_failed += 1
+                                failed_files.append(pdf_entry)
+                                print(f"❌ Error processing {pdf_entry}: {str(e)}")
+                                continue
+                                
+                except zipfile.BadZipFile:
+                    print(f"❌ Error: {file_path.name} is not a valid zip file")
+                    total_failed += 1
+                    failed_files.append(f"{file_path.name} (invalid zip)")
+                    continue
+                except Exception as e:
+                    print(f"❌ Error processing zip {file_path.name}: {str(e)}")
+                    total_failed += 1
+                    failed_files.append(f"{file_path.name} (zip error)")
+                    continue
+                    
+            else:
+                print(f"⚠️ Skipping unsupported file type: {file_path.name} (detected as {file_type})")
+                failed_files.append(f"{file_path.name} (unsupported type)")
+            
+            # Cleanup memory after processing each input file
+            self.cleanup_memory()
+            self.log_memory_usage(f"after processing {file_path.name}")
+
+        # Print processing summary
+        print(f"\n📊 Processing Summary:")
+        print(f"   ✅ Successfully processed: {total_processed} PDFs")
+        print(f"   ❌ Failed to process: {total_failed} PDFs")
+        
+        if failed_files:
+            print(f"📋 Failed files:")
+            for i, failed_file in enumerate(failed_files, 1):
+                print(f"   {i}. {failed_file}")
+        
+        # Store processing stats for metadata
+        self.processing_stats = {
+            'total_processed': total_processed,
+            'total_failed': total_failed,
+            'failed_files': failed_files,
+            'success_rate': total_processed / (total_processed + total_failed) if (total_processed + total_failed) > 0 else 0
+        }
+        
+        print(f"🎯 Overall success rate: {self.processing_stats['success_rate']:.1%}")
+        
+        # Return True if at least one file was processed successfully
+        return total_processed > 0
+
+    def process_single_pdf(self, pdf_path, source_name=None):
+        """Process a single PDF file through the entire pipeline with robust error handling."""
+        display_name = source_name or pdf_path.name
+        error_log = []
+        
+        try:
+            print(f"🔄 Processing PDF: {display_name}")
+            
+            # Step 1: OCR Processing for single file
+            try:
+                ocr_success = self.run_pipeline_step("ocr/ocr_processor.py", f"[OCR] || for {display_name}", [pdf_path])
+                if not ocr_success:
+                    error_msg = f"OCR processing failed for {display_name}"
+                    error_log.append(error_msg)
+                    print(f"❌ {error_msg}")
+                    return False
+            except Exception as e:
+                error_msg = f"OCR processing error for {display_name}: {str(e)}"
+                error_log.append(error_msg)
+                print(f"❌ {error_msg}")
+                return False
+            
+            # Step 2: Text Chunking for the OCR output of this file
+            try:
+                chunker_success = self.run_pipeline_step("chunker/text_chunker.py", f"[Chunking] || for {display_name}")
+                if not chunker_success:
+                    error_msg = f"Text chunking failed for {display_name}"
+                    error_log.append(error_msg)
+                    print(f"❌ {error_msg}")
+                    return False
+            except Exception as e:
+                error_msg = f"Text chunking error for {display_name}: {str(e)}"
+                error_log.append(error_msg)
+                print(f"❌ {error_msg}")
+                return False
+            
+            # Step 3: Content Structuring for the chunks of this file
+            try:
+                structurer_success = self.run_pipeline_step("structurer/content_structurer.py", f"[Structuring] || for {display_name}")
+                if not structurer_success:
+                    error_msg = f"Content structuring failed for {display_name}"
+                    error_log.append(error_msg)
+                    print(f"❌ {error_msg}")
+                    return False
+            except Exception as e:
+                error_msg = f"Content structuring error for {display_name}: {str(e)}"
+                error_log.append(error_msg)
+                print(f"❌ {error_msg}")
+                return False
+            
+            print(f"✅ Successfully processed: {display_name}")
+            return True
+            
+        except Exception as e:
+            error_msg = f"Unexpected error processing {display_name}: {str(e)}"
+            error_log.append(error_msg)
+            print(f"❌ {error_msg}")
+            
+            # Log all errors for this file
+            if error_log:
+                print(f"📋 Error summary for {display_name}:")
+                for i, error in enumerate(error_log, 1):
+                    print(f"   {i}. {error}")
+            
+            return False
+
+    def aggregate_final_results(self):
+        """Aggregate final results from all processed files."""
+        final_output_path = Path("/tmp/pipeline_work/final_output/structured_output.json")
+        if final_output_path.exists():
+            try:
+                with open(final_output_path, 'r', encoding='utf-8') as f:
+                    self.results['final_output'] = json.load(f)
+                print(f"📊 Loaded {len(self.results['final_output'])} chunks from final output")
+            except Exception as e:
+                print(f"⚠️ Error loading final output: {e}")
+                self.results['final_output'] = []
+        else:
+            print("⚠️ No final structured output found")
+            self.results['final_output'] = []
+
     def cleanup_temp_files(self):
         """Clean up temporary extraction directory."""
         if self.temp_dir and os.path.exists(self.temp_dir):
@@ -227,6 +456,9 @@ class Algorithm:
         self._validate_input()
         self.ensure_working_directories()
         
+        # Log initial memory usage
+        self.log_memory_usage("at start")
+        
         try:
             # Get input files from Ocean Protocol (can be PDFs or zip files)
             input_file_refs = self._job_details.files.files[0].input_files
@@ -238,69 +470,42 @@ class Algorithm:
             if not resolved_files:
                 raise ValueError("No files found in Ocean Protocol data directories")
             
-            # Extract zip files and collect all PDF files
-            pdf_files = self.extract_files(resolved_files)
-            
-            if not pdf_files:
-                raise ValueError("No PDF files found to process (checked both direct PDFs and zip file contents)")
-            
-            print(f"\n📄 Total PDF file(s) to process: {len(pdf_files)}")
-            for i, pdf_file in enumerate(pdf_files, 1):
-                print(f"   {i}. {pdf_file.name} (from {pdf_file.parent})")
-        
-            # Run PDF RAG Pipeline in sequence
-            print("\n🚀 Starting PDF RAG Pipeline")
+            # Process files using streaming approach (one PDF at a time)
+            print("\n🚀 Starting Streaming PDF RAG Pipeline")
             print("=" * 50)
             
-            # Step 1: OCR Processing
-            print("\n📖 Step 1: OCR Processing")
-            print("-" * 30)
-            if not self.run_pipeline_step("ocr/ocr_processor.py", "OCR Processing", pdf_files):
-                raise RuntimeError("OCR processing failed")
-            self.results['processing_status']['ocr'] = 'completed'
+            success = self.extract_and_process_files_streaming(resolved_files)
             
-            # Step 2: Text Chunking
-            print("\n✂️  Step 2: Text Chunking")
-            print("-" * 30)
-            if not self.run_pipeline_step("chunker/text_chunker.py", "Text Chunking"):
-                raise RuntimeError("Text chunking failed")
-            self.results['processing_status']['chunker'] = 'completed'
+            if not success:
+                raise ValueError("No PDF files were successfully processed")
             
-            # Step 3: Content Structuring
-            print("\n🏗️  Step 3: Content Structuring")
-            print("-" * 30)
-            if not self.run_pipeline_step("structurer/content_structurer.py", "Content Structuring"):
-                raise RuntimeError("Content structuring failed")
-            self.results['processing_status']['structurer'] = 'completed'
+            # Aggregate final results from all processed files
+            print("\n📊 Aggregating results...")
+            self.aggregate_final_results()
             
-            # Load the final structured output
-            final_output_path = Path("/tmp/pipeline_work/final_output/structured_output.json")
-            if final_output_path.exists():
-                with open(final_output_path, 'r', encoding='utf-8') as f:
-                    self.results['final_output'] = json.load(f)
-                print(f"\n✅ Pipeline completed successfully!")
-                print(f"📊 Processed {len(self.results['final_output'])} chunks")
-                print(f"📋 Extracted {len(self.results['final_output'])} sections")
-            else:
-                raise RuntimeError("Final structured output not found")
+            # Mark processing as completed
+            self.results['processing_status']['streaming_pipeline'] = 'completed'
+            
+            print(f"\n✅ Streaming pipeline completed successfully!")
+            print(f"📋 Processed files: {len(self.processed_files)}")
             
             # Add processing metadata
             self.results['metadata'] = {
-                'pipeline_version': '1.0',
-                'processed_files': [f.name for f in pdf_files],
+                'pipeline_version': '2.0-streaming',
+                'processed_files': self.processed_files,
                 'total_processing_steps': 3,
                 'processing_completed': True,
-                'total_files_processed': len(pdf_files),
-                'extraction_method': 'zip' if self.temp_dir else 'direct'
+                'total_files_processed': len(self.processed_files),
+                'extraction_method': 'streaming',
+                'processing_stats': self.processing_stats if hasattr(self, 'processing_stats') else {},
+                'memory_optimized': True
             }
                 
         finally:
-            # Always cleanup temporary files even though the tmp is not mounted in docker container to ensure the file not accumulate in the entire lifetime 
-            # it can be skiped tho
+            # Always cleanup temporary files 
             self.cleanup_temp_files()
             
         return self
-    
 
     def save_result(self, path: Path) -> None:
         # Save structured PDF output

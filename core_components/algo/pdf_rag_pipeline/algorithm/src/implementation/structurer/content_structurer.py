@@ -79,27 +79,42 @@ def main():
     
     # Check if chunker output exists
     if not chunker_output_path.exists():
-        print("Chunker output directory not found")
+        print("⚠️ Chunker output directory not found")
         return
     
     chunk_files = list(chunker_output_path.glob('chunk_*.txt'))
     if not chunk_files:
-        print("No chunk files found in chunker output")
+        print("⚠️ No chunk files found in chunker output")
         return
     
-    print(f"Processing {len(chunk_files)} chunk files")
+    print(f"🔄 Processing {len(chunk_files)} chunk files")
     
     # Structure the chunks
     structured_output = structure_chunks(chunker_output_path)
     
-    # Save structured output
+    # Load existing structured output if it exists (for progressive accumulation)
     output_file = final_output_path / 'structured_output.json'
-    with open(output_file, 'w', encoding='utf-8') as file:
-        json.dump(structured_output, file, indent=2, ensure_ascii=False)
+    existing_output = []
     
-    print(f"Structured output saved to {output_file}")
-    print(f"Processed {len(chunk_files)} chunks")
-    print(f"Extracted {len(structured_output)} sections")
+    if output_file.exists():
+        try:
+            with open(output_file, 'r', encoding='utf-8') as file:
+                existing_output = json.load(file)
+            print(f"📊 Loaded {len(existing_output)} existing chunks")
+        except Exception as e:
+            print(f"⚠️ Error loading existing output: {e}")
+            existing_output = []
+    
+    # Append new chunks to existing ones
+    combined_output = existing_output + structured_output
+    
+    # Save combined structured output
+    with open(output_file, 'w', encoding='utf-8') as file:
+        json.dump(combined_output, file, indent=2, ensure_ascii=False)
+    
+    print(f"✅ Structured output saved to {output_file}")
+    print(f"📊 Processed {len(chunk_files)} new chunks")
+    print(f"📋 Total chunks in output: {len(combined_output)}")
 
 if __name__ == "__main__":
     main()

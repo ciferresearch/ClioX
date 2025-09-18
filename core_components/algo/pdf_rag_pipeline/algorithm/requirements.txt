@@ -26,3 +26,5 @@ typing-inspect==0.9.0
     # via dataclasses-json
 torch==2.0.0
     # via main algorithm orchestrator for device detection
+psutil==6.1.0 
+    # via memory monitoring for streaming pipeline
