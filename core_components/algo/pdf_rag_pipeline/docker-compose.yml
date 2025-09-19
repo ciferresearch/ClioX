@@ -2,7 +2,7 @@ services:
   pdf-rag-pipeline:
     container_name: pdf-rag-pipeline
     platform: linux/amd64
-    image: chriswch/pdf-rag-pipeline:0.1.0
+    image: chriswch/pdf-rag-pipeline:0.1.1
     build:
       context: .
       dockerfile: Dockerfile
