@@ -131,18 +131,39 @@ class Algorithm:
         
         inputs_dir = Path("/data/inputs")
         
+        # Check if inputs directory exists
+        if not inputs_dir.exists():
+            print(f"❌ Inputs directory not found: {inputs_dir}")
+            return resolved_files
+        
+        print(f"📁 Inputs directory found: {inputs_dir}")
+        
+        # Look for hash directories
         hash_dirs = [d for d in inputs_dir.iterdir() if d.is_dir()]
+        
+        if not hash_dirs:
+            print(f"❌ No hash directories found in {inputs_dir}")
+            return resolved_files
+        
+        # Use the first hash directory (Ocean Protocol standard approach)
         hash_dir = hash_dirs[0]  # Take the first hash directory
         print(f"📁 Found hash directory: {hash_dir.name}")
         
+        # Look for file named "0" (the target file)
         zero_file = hash_dir / "0"
-        print(f"📄 Found Ocean Protocol file: {zero_file}")
-        resolved_files.append(zero_file)
+        if zero_file.exists():
+            print(f"📄 Found Ocean Protocol file: {zero_file}")
+            resolved_files.append(zero_file)
+        else:
+            print(f"⚠️ Target file '0' not found in {hash_dir.name}")
+            # List available files for debugging
+            available_files = [f.name for f in hash_dir.iterdir() if f.is_file()]
+            print(f"📋 Available files in {hash_dir.name}: {available_files}")
         
         if resolved_files:
             print(f"✅ Successfully resolved {len(resolved_files)} file(s)")
         else:
-            print("❌ No files found in Ocean Protocol data directory")
+            print("❌ No target files named '0' found in hash directory")
         
         return resolved_files
 
@@ -240,92 +261,95 @@ class Algorithm:
             # Log memory usage before processing each file
             self.log_memory_usage(f"before processing {file_path.name}")
             
-            # First, detect the actual file type
-            file_type = self.detect_file_type(file_path)
-            print(f"📄 Analyzing file: {file_path.name} -> Type: {file_type}")
+            # Ocean Protocol file detection: try ZIP first (most common), then PDF
+            print(f"📄 Analyzing Ocean Protocol file: {file_path.name}")
             
-            if file_type == 'pdf':
-                # Direct PDF file - process it immediately
-                try:
-                    success = self.process_single_pdf(file_path)
-                    if success:
-                        total_processed += 1
-                        self.processed_files.append(file_path.name)
-                        # print(f"✅ Processed PDF file: {file_path.name}")
-                    else:
-                        total_failed += 1
-                        failed_files.append(file_path.name)
-                        print(f"❌ Failed to process PDF file: {file_path.name}")
-                except Exception as e:
-                    total_failed += 1
-                    failed_files.append(file_path.name)
-                    print(f"❌ Exception processing PDF file {file_path.name}: {str(e)}")
+            # Try as ZIP first (Ocean Protocol standard)
+            try:
+                print(f"📦 Attempting to process as ZIP file: {file_path.name}")
                 
-            elif file_type == 'zip':
-                # Process zip file entries one at a time
-                print(f"📦 Processing zip file: {file_path.name}")
-                
-                try:
-                    with zipfile.ZipFile(file_path, 'r') as zip_ref:
-                        # Get list of PDF files in the zip
-                        pdf_entries = [name for name in zip_ref.namelist() 
-                                     if name.lower().endswith('.pdf') and not name.startswith('__MACOSX/')]
-                        
-                        print(f"📋 Found {len(pdf_entries)} PDF files in zip")
-                        
-                        # Process each PDF individually
-                        for pdf_entry in pdf_entries:
-                            try:
-                                print(f"🔄 Extracting and processing: {pdf_entry}")
-                                self.log_memory_usage(f"before {pdf_entry}")
-                                
-                                # Create temporary file for this single PDF
-                                with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
-                                    temp_pdf.write(zip_ref.read(pdf_entry))
-                                    temp_pdf_path = Path(temp_pdf.name)
-                                
-                                # Process the single PDF
-                                success = self.process_single_pdf(temp_pdf_path, source_name=pdf_entry)
-                                
-                                if success:
-                                    total_processed += 1
-                                    self.processed_files.append(pdf_entry)
-                                    print(f"✅ Processed: {pdf_entry}")
-                                else:
-                                    total_failed += 1
-                                    failed_files.append(pdf_entry)
-                                    print(f"❌ Failed to process: {pdf_entry}")
-                                
-                                # Immediate cleanup of temporary file
-                                try:
-                                    temp_pdf_path.unlink()
-                                except:
-                                    pass
-                                
-                                # Force memory cleanup after each PDF
-                                self.cleanup_memory()
-                                self.log_memory_usage(f"after {pdf_entry}")
-                                
-                            except Exception as e:
+                with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                    # Get list of PDF files in the zip
+                    pdf_entries = [name for name in zip_ref.namelist() 
+                                 if name.lower().endswith('.pdf') and not name.startswith('__MACOSX/')]
+                    
+                    print(f"� Found {len(pdf_entries)} PDF files in ZIP")
+                    
+                    if not pdf_entries:
+                        print(f"⚠️ No PDF files found in ZIP: {file_path.name}")
+                        failed_files.append(f"{file_path.name} (no PDFs in ZIP)")
+                        continue
+                    
+                    # Process each PDF individually
+                    for pdf_entry in pdf_entries:
+                        try:
+                            print(f"🔄 Extracting and processing: {pdf_entry}")
+                            self.log_memory_usage(f"before {pdf_entry}")
+                            
+                            # Create temporary file for this single PDF
+                            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
+                                temp_pdf.write(zip_ref.read(pdf_entry))
+                                temp_pdf_path = Path(temp_pdf.name)
+                            
+                            # Process the single PDF
+                            success = self.process_single_pdf(temp_pdf_path, source_name=pdf_entry)
+                            
+                            if success:
+                                total_processed += 1
+                                self.processed_files.append(pdf_entry)
+                                print(f"✅ Processed: {pdf_entry}")
+                            else:
                                 total_failed += 1
                                 failed_files.append(pdf_entry)
-                                print(f"❌ Error processing {pdf_entry}: {str(e)}")
-                                continue
-                                
-                except zipfile.BadZipFile:
-                    print(f"❌ Error: {file_path.name} is not a valid zip file")
-                    total_failed += 1
-                    failed_files.append(f"{file_path.name} (invalid zip)")
-                    continue
-                except Exception as e:
-                    print(f"❌ Error processing zip {file_path.name}: {str(e)}")
-                    total_failed += 1
-                    failed_files.append(f"{file_path.name} (zip error)")
-                    continue
+                                print(f"❌ Failed to process: {pdf_entry}")
+                            
+                            # Immediate cleanup of temporary file
+                            try:
+                                temp_pdf_path.unlink()
+                            except:
+                                pass
+                            
+                            # Force memory cleanup after each PDF
+                            self.cleanup_memory()
+                            self.log_memory_usage(f"after {pdf_entry}")
+                            
+                        except Exception as e:
+                            total_failed += 1
+                            failed_files.append(pdf_entry)
+                            print(f"❌ Error processing {pdf_entry}: {str(e)}")
+                            continue
+                            
+            except zipfile.BadZipFile:
+                # Not a ZIP file, try as direct PDF
+                print(f"📄 Not a ZIP file, attempting to process as direct PDF: {file_path.name}")
+                
+                # Check if it's a PDF by file signature
+                file_type = self.detect_file_type(file_path)
+                
+                if file_type == 'pdf':
+                    try:
+                        success = self.process_single_pdf(file_path)
+                        if success:
+                            total_processed += 1
+                            self.processed_files.append(file_path.name)
+                            print(f"✅ Processed PDF file: {file_path.name}")
+                        else:
+                            total_failed += 1
+                            failed_files.append(file_path.name)
+                            print(f"❌ Failed to process PDF file: {file_path.name}")
+                    except Exception as e:
+                        total_failed += 1
+                        failed_files.append(file_path.name)
+                        print(f"❌ Exception processing PDF file {file_path.name}: {str(e)}")
+                else:
+                    print(f"⚠️ Unsupported file type: {file_path.name} (detected as {file_type})")
+                    failed_files.append(f"{file_path.name} (unsupported type: {file_type})")
                     
-            else:
-                print(f"⚠️ Skipping unsupported file type: {file_path.name} (detected as {file_type})")
-                failed_files.append(f"{file_path.name} (unsupported type)")
+            except Exception as e:
+                print(f"❌ Error processing file {file_path.name}: {str(e)}")
+                total_failed += 1
+                failed_files.append(f"{file_path.name} (processing error)")
+                continue
             
             # Cleanup memory after processing each input file
             self.cleanup_memory()
@@ -446,6 +470,9 @@ class Algorithm:
                 print(f"⚠️  Warning: Could not clean up temp directory {self.temp_dir}: {str(e)}")
     
     def run(self) -> "Algorithm":
+        print("🚀 Starting PDF RAG Pipeline Algorithm")
+        print(f"📊 Python process ID: {os.getpid()}")
+        
         # Initialize results dictionary
         self.results = {
             'final_output': [],
@@ -453,13 +480,17 @@ class Algorithm:
             'metadata': {}
         }
 
-        self._validate_input()
-        self.ensure_working_directories()
-        
-        # Log initial memory usage
-        self.log_memory_usage("at start")
-        
         try:
+            print("🔍 Step 1: Validating input...")
+            self._validate_input()
+            
+            print("🔍 Step 2: Setting up working directories...")
+            self.ensure_working_directories()
+            
+            # Log initial memory usage
+            self.log_memory_usage("at start")
+            
+            print("🔍 Step 3: Resolving file references...")
             # Get input files from Ocean Protocol (can be PDFs or zip files)
             input_file_refs = self._job_details.files.files[0].input_files
             print(f"📥 Processing {len(input_file_refs)} input file reference(s): {input_file_refs}")
@@ -470,6 +501,7 @@ class Algorithm:
             if not resolved_files:
                 raise ValueError("No files found in Ocean Protocol data directories")
             
+            print("🔍 Step 4: Starting file processing...")
             # Process files using streaming approach (one PDF at a time)
             print("\n🚀 Starting Streaming PDF RAG Pipeline")
             print("=" * 50)
@@ -479,6 +511,7 @@ class Algorithm:
             if not success:
                 raise ValueError("No PDF files were successfully processed")
             
+            print("\n🔍 Step 5: Aggregating final results...")
             # Aggregate final results from all processed files
             print("\n📊 Aggregating results...")
             self.aggregate_final_results()
@@ -501,6 +534,12 @@ class Algorithm:
                 'memory_optimized': True
             }
                 
+        except Exception as e:
+            print(f"❌ Critical error in pipeline: {str(e)}")
+            print(f"📍 Error type: {type(e).__name__}")
+            import traceback
+            print(f"📍 Full traceback: {traceback.format_exc()}")
+            raise
         finally:
             # Always cleanup temporary files 
             self.cleanup_temp_files()
