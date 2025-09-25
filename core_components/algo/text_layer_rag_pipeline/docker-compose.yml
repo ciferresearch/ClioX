@@ -1,0 +1,29 @@
+services:
+  pdf-rag-pipeline:
+    container_name: text-layer-pdf-rag-pipeline
+    platform: linux/amd64
+    image: chriswch/text-layer-pdf-rag-pipeline:0.1.0
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Mount Ocean Protocol data directories
+      - ./_data/inputs:/data/inputs:ro
+      - ./_data/ddos:/data/ddos:ro
+      - ./_data/outputs:/data/outputs:rw
+      - ./_data/logs:/data/logs:rw
+      # Persistent OCR cache to speed up repeated runs (outside outputs dir)
+      - ./_cache/ocr_cache:/shared_volumes/ocr_cache:rw
+      - ./algorithm/src:/algorithm/src/
+      - ./algorithm/tests:/algorithm/tests/
+      - ./entrypoint.sh:/algorithm/entrypoint.sh
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/algorithm
+      - DEV=1
+      - DIDS=["eb60f87363a36a5ae5cb8373524a8fd976b0cc5f8c40a706c615b857ae0e2974"]
+      - secret=1234
+      - TRANSFORMATION_DID=1234
+      # Configure OCR cache to use mounted persistent volume
+      - OCR_CACHE_DIR=/shared_volumes/ocr_cache
+      

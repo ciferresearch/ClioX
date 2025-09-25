@@ -113,3 +113,6 @@ core-components/algo/new_algo_template/backend/static/data/temp/processed_wordcl
 
 # next
 .next
+
+# data input 
+_data/
